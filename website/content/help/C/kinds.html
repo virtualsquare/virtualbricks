@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The kinds of brick — Virtualbricks Help</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="page guide">
+<main>
+<div class="trail">
+<p><a href="index.html">Virtualbricks Help</a> › <a
+href="index.html#start">Getting started</a></p>
+</div>
+<h1>The kinds of brick</h1>
+<p><span class="gui">New Brick</span>, in the <span
+class="gui">Bricks</span> tab, lists the kinds of brick in three groups.
+A new brick is named after its kind and the first free number, as <code
+class="sys">sw1</code> or <code class="sys">tap1</code>, and its
+settings show at once.</p>
+<figure>
+<a href="figures/new-brick.png"><img src="figures/new-brick.png"
+alt="New Brick open over the Bricks tab: the kinds of brick in three groups, Machines and switches, Links and This computer, each with a line that says what it is; the row Router says that vde_router isn&#39;t installed." /></a>
+<figcaption>New Brick</figcaption>
+</figure>
+<p>When this computer lacks the program of a kind, its row says so after
+a warning sign. You can still make the brick: it starts once the program
+is installed. See <a href="programs.html">The programs it needs</a>.</p>
+<h2 id="machines">Machines and switches</h2>
+<dl>
+<dt><span class="gui">Virtual machine</span></dt>
+<dd>
+<p>A computer that QEMU runs, with its disks, its memory, and a network
+card for each switch it plugs into. See <a href="machines.html">Virtual
+machines</a>.</p>
+</dd>
+<dt><span class="gui">Switch</span></dt>
+<dd>
+<p>A VDE switch: the other bricks plug into its ports, as into an
+Ethernet switch. It can start as it is. It runs <code
+class="cmd">vde_switch</code>.</p>
+</dd>
+<dt><span class="gui">Switch wrapper</span></dt>
+<dd>
+<p>A switch that another program runs. The bricks of this project plug
+into its socket, whose path its settings give. You don't start or stop
+it: it runs while that socket is there.</p>
+</dd>
+<dt><span class="gui">Router</span></dt>
+<dd>
+<p>A VDE router between switches. It has no settings yet: its console
+configures it. It runs <code class="cmd">vde_router</code>.</p>
+</dd>
+</dl>
+<h2 id="links">Links</h2>
+<dl>
+<dt><span class="gui">Wire</span></dt>
+<dd>
+<p>A cable between two switches, which its settings choose. It runs
+<code class="cmd">dpipe</code> and <code
+class="cmd">vde_plug</code>.</p>
+</dd>
+<dt><span class="gui">Netemu</span></dt>
+<dd>
+<p>A cable between two switches that emulates a network link: its
+bandwidth, delay, loss and more, in states that change over time. It
+runs <code class="cmd">vde-netemu</code>.</p>
+</dd>
+<dt><span class="gui">Tunnel server</span></dt>
+<dd>
+<p>One end of an encrypted tunnel: it joins a switch here to a tunnel
+client on another computer, which connects to it. It runs <code
+class="cmd">vde_cryptcab</code>.</p>
+</dd>
+<dt><span class="gui">Tunnel client</span></dt>
+<dd>
+<p>The other end of an encrypted tunnel: it joins a switch here to a
+tunnel server on another computer, whose address its settings give. It
+runs <code class="cmd">vde_cryptcab</code>.</p>
+</dd>
+</dl>
+<h2 id="host">This computer</h2>
+<dl>
+<dt><span class="gui">Tap</span></dt>
+<dd>
+<p>A network interface of this computer, plugged into a switch: this
+computer joins the lab through it. It runs <code
+class="cmd">vde_plug2tap</code> as root, through <code
+class="cmd">sudo</code>.</p>
+</dd>
+<dt><span class="gui">Capture interface</span></dt>
+<dd>
+<p>An interface of this computer, whose packets go to a switch. It runs
+<code class="cmd">vde_pcapplug</code> as root, through <code
+class="cmd">sudo</code>.</p>
+</dd>
+</dl>
+<p>For what <code class="cmd">sudo</code> needs, see <a
+href="problems.html#sudo">A tap or a capture interface doesn't
+start</a>.</p>
+<section id="seealso" class="seealso">
+<h2>See also</h2>
+<div class="links">
+<div class="link">
+<p><a href="bricks.html">Bricks</a></p>
+<div class="desc">
+<p>Start, stop, configure, connect, rename and delete the bricks of a
+lab.</p>
+</div>
+</div>
+<div class="link">
+<p><a href="first-lab.html">Make your first lab</a></p>
+<div class="desc">
+<p>A switch and a machine plugged into it, started.</p>
+</div>
+</div>
+<div class="link">
+<p><a href="programs.html">The programs it needs</a></p>
+<div class="desc">
+<p>VDE and QEMU: what a missing program stops, and where Virtualbricks
+looks for them.</p>
+</div>
+</div>
+</div>
+</section>
+</main>
+</div>
+</body>
+</html>

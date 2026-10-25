@@ -1,0 +1,13 @@
+/.venv/
+/output/
+/tmp/
+/virtualbricks.egg-info/
+
+__pycache__/
+
+# Vim
+*.pyc
+.*.sw?
+
+# Pycharm
+/.idea/

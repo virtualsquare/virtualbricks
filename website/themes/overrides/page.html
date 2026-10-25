@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{{ page.title|striptags|e }} {% if page.subtitle %} - {{ page.subtitle|striptags|e }} {% endif %} · {{ super() }}
+{% endblock title %}
+
+{% block head_description %}
+{% if page.summary %}
+{{ page.summary|striptags|e }}
+{% endif %}
+{% endblock head_description %}
+
+{% block meta_tags_in_head %}
+{{ super() }}
+{% if page.keywords %}
+<meta name="keywords" content="{{ page.keywords }}" />
+{% endif %}
+
+{% from '_includes/smo_metadata.html' import smo_metadata with context %}
+{{ smo_metadata(page) }}
+{% endblock meta_tags_in_head %}
+
+{% block content %}
+{# Virtualbricks: the home page, slug "home", is laid out as Elegant's
+   landing page with PROJECTS: the title across, the text and the projects
+   side by side, then the recent news. #}
+{% set home = page.slug == 'home' %}
+<article>
+<div class="row-fluid">
+    <header class="page-header {{ 'span12' if home else 'span10 offset2' }}">
+    <h1><a href="{{ SITEURL }}/{{ page.url }}"> {{ page.title }} {% if page.subtitle %} <small> {{ page.subtitle }} </small> {% endif %} </a></h1>
+    </header>
+</div>
+
+<div class="row-fluid">
+    {% if page.toc %}
+    <div class="span2 table-of-content">
+        <nav>
+        <h4>Contents</h4>
+        {{ page.toc }}
+        </nav>
+    </div>
+    <div class="span8 article-content">
+    {% elif home %}
+    <div class="span8 article-content">
+    {% else %}
+    <div class="span8 offset2 article-content">
+    {% endif %}
+        {{ page.content }}
+        {# Virtualbricks: link the translations, as the home page in French #}
+        {% import '_includes/translations.html' as translations with context %}
+        {{ translations.translations_for(page) }}
+        {% from '_includes/comments.html' import comments_section with context %}
+        {{ comments_section(page) }}
+    </div>
+    {% if home %}
+    {% from '_includes/_defaults.html' import PROJECTS, PROJECTS_TITLE with context %}
+    {% if PROJECTS %}
+    <div class="span4">
+        <header>
+        <h1 id="my-projects">{{ PROJECTS_TITLE }}</h1>
+        </header>
+        <ul class="list-projects">
+            {% for project in PROJECTS %}
+            <li>
+            <a href="{{ project.url }}" title="{{ project.name }}">{{ project.name }}</a> <span class="proj-desc">{{ project.description }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+    {% endif %}
+</div>
+</article>
+
+{% if home %}
+{% set posts = articles|selectattr('category.slug', 'equalto', 'news')|list %}
+{% if posts %}
+{% from '_includes/_defaults.html' import RECENT_ARTICLES_COUNT with context %}
+<div class="row-fluid">
+    <div class="span12">
+        <header>
+        <h1 id="recent-posts">Recent Posts <a id="allposts" href="{{ SITEURL }}/{{ posts[0].category.url }}">all posts</a></h1>
+        </header>
+        <div class="recent-posts">
+            {% for article in posts[:RECENT_ARTICLES_COUNT] %}
+            <div itemscope class="recent-posts-article">
+                <a href="{{ SITEURL }}/{{ article.url }}">
+                    {{ article.title }}
+                    {% if article.subtitle %}
+                    <small class="subtitle">
+                        {{ article.subtitle }}
+                    </small>
+                    {% endif %}
+                </a>
+                <div class="recent-posts-posted">
+                    posted in
+                    <a href="{{ SITEURL }}/{{ article.category.url }}">{{ article.category }}</a>
+                    <time itemprop="dateCreated" datetime="{{ article.date.isoformat() }}">{{ article.locale_date }}</time>
+                </div>
+                {% if RECENT_ARTICLE_SUMMARY %}
+                    <p>{{ article.summary }}</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endif %}
+
+{% include '_includes/photoswipe.html' %}
+{% endblock content %}
+
+    {% block script %}
+    {{ super() }}
+    {% from '_includes/comments.html' import comments_script with context %}
+    {{ comments_script() }}
+    {% endblock script %}
+

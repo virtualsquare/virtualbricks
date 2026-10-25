@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Import DTN2hops — Virtualbricks Help</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="page guide">
+<main>
+<div class="trail">
+<p><a href="index.html">Virtualbricks Help</a> › <a
+href="index.html#tutorials">Tutorials</a></p>
+</div>
+<h1>Import DTN2hops</h1>
+<p>DTN2hops is a testbed of four virtual machines, <code
+class="sys">node1</code> to <code class="sys">node4</code>, five
+switches, a switch wrapper and three channel emulators. It comes in two
+files, which you have downloaded into your <code
+class="file">Downloads</code> folder:</p>
+<ul>
+<li><p><code class="file">DTN2hops_26_Feb_2026.vbp</code>, the archive
+of the testbed: its bricks, and the private copy of the disk of each
+machine, with what was done in it;</p></li>
+<li><p><code class="file">debian13.tar.gz</code>, which holds the disk
+image that the private copies are made on, <code
+class="file">debian13.qcow2</code>. The archive doesn't hold
+it.</p></li>
+</ul>
+<p>Before you start, extract <code class="file">debian13.qcow2</code>
+into <code class="file">Downloads</code>, where it takes 6.8 GB. In a
+terminal:</p>
+<pre><code>cd ~/Downloads
+tar -xzf debian13.tar.gz</code></pre>
+<p>You import the testbed into Virtualbricks. The testbed was made with
+Virtualbricks 2.1, and Virtualbricks converts it while it reads the
+archive.</p>
+<h2 id="open">Open the archive</h2>
+<ol type="1">
+<li><p>Choose <span class="guiseq"><span class="gui">Projects</span> ›
+<span class="gui">Import…</span></span>. A window opens, and asks for
+the archive.</p>
+<figure>
+<a href="figures/import-menu.png"><img src="figures/import-menu.png"
+alt="The main window, with the menu Projects open: Projects…, New Project…, Open Recent, Save, Duplicate…, Rename…, Import… and Export…." /></a>
+<figcaption>The menu Projects</figcaption>
+</figure></li>
+<li><p>In it, click <span class="gui">Home</span>, double-click <code
+class="file">Downloads</code>, choose <code
+class="file">DTN2hops_26_Feb_2026.vbp</code>, and click <span
+class="gui">Open</span>. The Import Project window opens, reads the
+archive, then shows what it holds.</p>
+<figure>
+<a href="figures/import-archive.png"><img
+src="figures/import-archive.png"
+alt="The window Choose an archive, in the folder Downloads of the home, with DTN2hops_26_Feb_2026.vbp chosen, and the button Open at the bottom right." /></a>
+<figcaption>The archive, in Downloads</figcaption>
+</figure></li>
+</ol>
+<h2 id="options">What the window offers</h2>
+<figure>
+<a href="figures/import.png"><img src="figures/import.png"
+alt="The Import Project window for ~/Downloads/DTN2hops_26_Feb_2026.vbp: the name DTN2hops_26_Feb_2026; 3 × Netemu, 5 × Switch, 1 × Switch wrapper and 4 × Virtual machine; under Images, The archive doesn&#39;t have this image; the image debian13, used by node1.hda to node4.hda, with Copy grey and Leave unset chosen; Open the project after the import, on." /></a>
+<figcaption>The Import Project window, with the testbed</figcaption>
+</figure>
+<dl>
+<dt><span class="gui">Name</span></dt>
+<dd>
+<p><code class="sys">DTN2hops_26_Feb_2026</code>, the name of the file.
+If another project already has this name, the window suggests <code
+class="sys">DTN2hops_26_Feb_2026-2</code>: an import never replaces an
+existing project. You can change it; under the input box, the window
+says if and why a name can't be a project's: it's empty, is too long,
+etc.</p>
+</dd>
+<dt>The bricks</dt>
+<dd>
+<p>Below the name, how many bricks of each kind the project has, by the
+names of the <span class="gui">Bricks</span> tab: <span
+class="gui">Netemu</span> are the channel emulators.</p>
+</dd>
+<dt><span class="gui">Images</span></dt>
+<dd>
+<p><span class="gui">The archive doesn't have this image.</span>, once
+the window has looked through the archive. Then a row for <code
+class="sys">debian13</code>, used by the <code class="sys">hda</code>
+disk of each of the four machines, with three choices:</p>
+<ul>
+<li><p><span class="gui">Copy</span>, from the archive to the shared
+images of your workspace. It's grey: the archive doesn't hold the image,
+and there is nothing to copy.</p></li>
+<li><p><span class="gui">Use a file…</span> of this computer.</p></li>
+<li><p><span class="gui">Leave unset</span>: the image stays without its
+file, until <span class="gui">Find the File…</span>, in the <span
+class="gui">Images</span> tab, gives it one.</p></li>
+</ul>
+<p><span class="gui">Leave unset</span> is chosen: the window looked for
+the image where the project had it, <code
+class="file">/home/carlo/VB_images/debian13.qcow2</code> on the computer
+the testbed was made on, and in your shared images, as <code
+class="file">debian13.qcow2</code> or <code
+class="file">debian13</code>, and found it in neither. It doesn't look
+in <code class="file">Downloads</code>.</p>
+</dd>
+<dt><span class="gui">Open the project after the import</span></dt>
+<dd>
+<p>On: once imported, the testbed opens in the main window.</p>
+</dd>
+<dt><span class="gui">Import</span></dt>
+<dd>
+<p>Grey until the window has read the archive, and whenever something
+stops the import; the window says what.</p>
+</dd>
+</dl>
+<h2 id="image">Choose the image</h2>
+<div class="note warning">
+<p>For this tutorial, choose <span class="gui">Use a file…</span>, then
+<code class="file">debian13.qcow2</code>: not <span
+class="gui">Copy</span>, nor <span class="gui">Leave unset</span>.</p>
+</div>
+<ol type="1">
+<li><p>In the row of <code class="sys">debian13</code>, click <span
+class="gui">Use a file…</span>. In the window that opens, click <span
+class="gui">Home</span>, double-click <code
+class="file">Downloads</code>, choose <code
+class="file">debian13.qcow2</code>, the file you extracted from <code
+class="file">debian13.tar.gz</code>, and click <span
+class="gui">Open</span>.</p>
+<figure>
+<a href="figures/import-image.png"><img src="figures/import-image.png"
+alt="The window The file of debian13, in the folder Downloads of the home, with DTN2hops_26_Feb_2026.vbp and debian13.qcow2, which is chosen, and the button Open at the bottom right." /></a>
+<figcaption>The image, in Downloads</figcaption>
+</figure></li>
+</ol>
+<figure>
+<a href="figures/import-ready.png"><img src="figures/import-ready.png"
+alt="The Import Project window, with Use a file… chosen for debian13, which uses ~/Downloads/debian13.qcow2, and the button Import at the top right." /></a>
+<figcaption>The image, chosen</figcaption>
+</figure>
+<p>The row now says <span class="gui">Uses
+~/Downloads/debian13.qcow2</span>. The import points the private copies
+of the four machines at it, so that they keep what was done in them. It
+must be the image the testbed was made on: a private copy holds only the
+changes over its image. If you use a different one the machine finds a
+damaged disk.</p>
+<p>The other two choices don't do for this testbed:</p>
+<dl>
+<dt><span class="gui">Copy</span></dt>
+<dd>
+<p>Grey: the archive doesn't hold the image.</p>
+</dd>
+<dt><span class="gui">Leave unset</span></dt>
+<dd>
+<p>The virtual machines can't start until <a
+href="images.html#menu"><span class="gui">Find the File…</span></a>, in
+the <span class="gui">Images</span> tab, gives <code
+class="sys">debian13</code> its file.</p>
+</dd>
+</dl>
+<div class="note tip">
+<p>The project uses <code class="file">debian13.qcow2</code> where it
+is: keep it in <code class="file">Downloads</code>. To keep it with your
+other images instead, move it into the <a
+href="images.html#shared">shared images</a> of your workspace before the
+import: there, the window finds it, and chooses <span class="gui">Use a
+file…</span> with it by itself.</p>
+</div>
+<h2 id="import">Import</h2>
+<ol type="1">
+<li><p>Click <span class="gui">Import</span>. The window shows the
+progress, and <span class="gui">Cancel</span> becomes <span
+class="gui">Stop</span>: an import stopped removes what it wrote. You
+can close the window, and let the import finish.</p>
+<figure>
+<a href="figures/import-progress.png"><img
+src="figures/import-progress.png"
+alt="The Import Project window during the import: Extracting the archive, with the progress bar a third full, 1.0 MB of 3.2 MB, and under it You can close this window: the Logs window says when the import is done. The button Stop at the top left." /></a>
+<figcaption>The import, under way</figcaption>
+</figure></li>
+</ol>
+<p>Once imported, the project opens: the main window shows <code
+class="sys">DTN2hops_26_Feb_2026</code>, with its thirteen bricks, all
+stopped.</p>
+<figure>
+<a href="figures/import-done.png"><img src="figures/import-done.png"
+alt="The main window of the project DTN2hops_26_Feb_2026, on its tab Bricks: 0 of 13 running; sw1 to sw4, switchwrapper, sw5, channel_emulator, sat_channel_emulator, to_host_ch_emulator, then node1, all stopped, with the start button of switchwrapper grey." /></a>
+<figcaption>The project, imported</figcaption>
+</figure>
+<p>If a brick of the previous project was running before the import, the
+project is imported but doesn't open: stop the bricks, then open it from
+the Projects window.</p>
+<p>The start button of <code class="sys">switchwrapper</code> is grey: a
+switch wrapper is a switch that another program runs, at <code
+class="file">/var/run/switch/sck</code>, and it runs while that
+program's switch is there. See <a href="kinds.html">The kinds of
+brick</a>.</p>
+<section id="seealso" class="seealso">
+<h2>See also</h2>
+<div class="links">
+<div class="link">
+<p><a href="images.html">Disk images</a></p>
+<div class="desc">
+<p>Add, make, share and find the disk images of a project.</p>
+</div>
+</div>
+<div class="link">
+<p><a href="archives.html">Import and export</a></p>
+<div class="desc">
+<p>A lab in one file, for another computer.</p>
+</div>
+</div>
+</div>
+</section>
+</main>
+</div>
+</body>
+</html>

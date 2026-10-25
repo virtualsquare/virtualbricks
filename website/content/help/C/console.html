@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The console and scripts — Virtualbricks Help</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="page guide">
+<main>
+<div class="trail">
+<p><a href="index.html">Virtualbricks Help</a> › <a
+href="index.html#beyond">Settings and beyond</a></p>
+</div>
+<h1>The console and scripts</h1>
+<p>Started from a terminal, Virtualbricks reads the commands of its
+console there, beside the windows, unless you give <code
+class="cmd">--no-term</code>. With <code class="cmd">--no-gui</code> it
+runs without the windows, and the console is the way in: a lab on a
+computer without a display.</p>
+<p>A command is a noun, a verb, then its arguments:</p>
+<pre><code>brick new switch
+brick set vm1 memory=1024 cpus=2
+brick start sw1 vm1
+event start lab
+status</code></pre>
+<p>The nouns are <code class="cmd">brick</code>, <code
+class="cmd">event</code>, <code class="cmd">image</code>, <code
+class="cmd">setting</code> and <code class="cmd">project</code>. <code
+class="cmd">help</code> lists the commands, and <code
+class="cmd">help brick set</code> explains one. <kbd>Tab</kbd> completes
+the words, the names and the keys, and the history is kept between
+runs.</p>
+<p>Every command and option is in <a
+href="command-line.html">virtualbricks(1)</a>.</p>
+<h2 id="scripts">Scripts</h2>
+<p>A file of commands, one a line, runs with <span class="cmd">source
+<em>file</em></span> in the console, or with <span
+class="cmd">virtualbricks --run <em>file</em></span> at start: a lab set
+up the same way every time. The first error stops the file and says
+which line. An event can run a command of the console too; see <a
+href="events.html">Events</a>.</p>
+<h2 id="command">From another terminal</h2>
+<p>Started with <code class="cmd">--listen</code>, Virtualbricks takes
+commands from other terminals and scripts:</p>
+<pre><code>virtualbricks --listen
+virtualbricks --command brick start sw1
+virtualbricks --connect --run start-lab.vb</code></pre>
+<p>The answer goes to the standard output, and the exit status says if
+the command was done.</p>
+<section id="seealso" class="seealso">
+<h2>See also</h2>
+<div class="links">
+<div class="link">
+<p><a href="remote.html">Another computer</a></p>
+<div class="desc">
+<p>A lab on another computer, with its windows on your desktop.</p>
+</div>
+</div>
+</div>
+</section>
+</main>
+</div>
+</body>
+</html>
