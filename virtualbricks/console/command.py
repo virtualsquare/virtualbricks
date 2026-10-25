@@ -212,7 +212,8 @@ class KeyValues(Pair):
 def values_of(kind: Any, factory: Any) -> list[str]:
     """What a value of a kind of the schema can be, where it's a short list."""
 
-    from virtualbricks.config.schema import Bool, Choice as SchemaChoice, Ref
+    from virtualbricks.config.schema import Bool, Ref
+    from virtualbricks.config.schema import Choice as SchemaChoice
 
     if isinstance(kind, Bool):
         return ["true", "false"]

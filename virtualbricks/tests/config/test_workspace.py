@@ -27,15 +27,15 @@ import time
 from twisted.trial import unittest
 
 from virtualbricks import errors, locations
-from virtualbricks.config.projectfile import ProjectFormatError
+from virtualbricks.config import workspace
+from virtualbricks.config.projectfile import FORMAT, ProjectFormatError
 from virtualbricks.config.settings import (
     current_project,
     project_settings,
+    set_current_project,
     set_setting,
 )
 from virtualbricks.config.tomlfile import dump_toml, load_toml
-from virtualbricks.config import workspace
-from virtualbricks.config.projectfile import FORMAT
 from virtualbricks.config.workspace import (
     DiskUsage,
     ImageSummary,
@@ -43,9 +43,13 @@ from virtualbricks.config.workspace import (
     Workspace,
     free_name,
 )
-from virtualbricks.config.settings import set_current_project
-from virtualbricks.tests import FakeLogger, FakeTrash, isolate, make_factory
-from virtualbricks.tests import reset_settings
+from virtualbricks.tests import (
+    FakeLogger,
+    FakeTrash,
+    isolate,
+    make_factory,
+    reset_settings,
+)
 
 # 28 bytes, as /run/user/1000/virtualbricks: with the key of the workspace, a
 # project name of 40 bytes leaves 9 bytes to the names of its bricks.

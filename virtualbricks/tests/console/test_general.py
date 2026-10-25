@@ -20,11 +20,11 @@
 import os
 
 from virtualbricks.bricks import event as event_module
-from virtualbricks.console.command import Arg, command
-from virtualbricks.console.dispatch import run
 from virtualbricks.bricks.eventaction import (
     StopAction,
 )
+from virtualbricks.console.command import Arg, command
+from virtualbricks.console.dispatch import run
 from virtualbricks.console.general import help_
 from virtualbricks.tests.console import ConsoleTestCase, own_commands
 

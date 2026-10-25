@@ -32,8 +32,7 @@ from twisted.internet import defer
 from twisted.trial import unittest
 
 from virtualbricks.brickfactory import BrickFactory
-from virtualbricks.tests import isolate, reset_settings, use_workspace
-from virtualbricks.tests import sample
+from virtualbricks.tests import isolate, reset_settings, sample, use_workspace
 
 REQUIRED = ("qemu-system-x86_64", "qemu-img", "vde_switch")
 MISSING = [name for name in REQUIRED if shutil.which(name) is None]

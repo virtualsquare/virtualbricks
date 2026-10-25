@@ -32,7 +32,6 @@ what a switch showing it needs.
 from __future__ import annotations
 
 import os
-
 from typing import cast
 
 from twisted.internet import defer, error, protocol

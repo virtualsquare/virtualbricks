@@ -38,6 +38,7 @@ from typing import TYPE_CHECKING
 
 from twisted.internet.interfaces import IReactorTime
 
+from virtualbricks.bricks import Brick, is_running
 from virtualbricks.bricks.event import Event
 from virtualbricks.bricks.eventaction import (
     ConsoleAction,
@@ -47,7 +48,6 @@ from virtualbricks.bricks.eventaction import (
     StoredAction,
 )
 from virtualbricks.i18n import _, ngettext
-from virtualbricks.bricks import Brick, is_running
 
 if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.brickfactory import BrickFactory

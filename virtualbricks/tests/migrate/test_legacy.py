@@ -19,6 +19,7 @@ import textwrap
 
 from twisted.trial import unittest
 
+from virtualbricks.config.report import Report
 from virtualbricks.migrate.legacy import (
     Link,
     looks_like_project,
@@ -30,7 +31,6 @@ from virtualbricks.migrate.legacy import (
     read_settings,
     where,
 )
-from virtualbricks.config.report import Report
 from virtualbricks.tests.migrate.fixtures import CONFIG1
 
 NETEMU = """\

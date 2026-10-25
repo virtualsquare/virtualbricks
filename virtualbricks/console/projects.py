@@ -31,6 +31,7 @@ from __future__ import annotations
 from typing import Protocol
 
 from virtualbricks.brickfactory import BrickFactory
+from virtualbricks.bricks import must_stop
 from virtualbricks.config.report import Report
 from virtualbricks.config.workspace import projects
 from virtualbricks.console.command import (
@@ -44,7 +45,6 @@ from virtualbricks.console.command import (
 )
 from virtualbricks.console.output import table
 from virtualbricks.i18n import N_, _, ngettext
-from virtualbricks.bricks import must_stop
 
 
 class Frontend(Protocol):

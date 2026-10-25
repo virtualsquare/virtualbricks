@@ -27,8 +27,8 @@ from virtualbricks.console.command import (
     Number,
     Pair,
     command,
+    find,
 )
-from virtualbricks.console.command import find
 from virtualbricks.console.parser import bind, complete, line_of, parse, split
 from virtualbricks.tests.console import ConsoleTestCase, own_commands
 

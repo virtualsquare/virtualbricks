@@ -38,10 +38,12 @@ import os
 import sys
 import textwrap
 
-# the modules of the nouns declare their commands
 from twisted.protocols import amp
 
-from virtualbricks.console import command as table, dispatch  # noqa: F401
+from virtualbricks.console import command as table
+
+# the modules of the nouns declare their commands
+from virtualbricks.console import dispatch  # noqa: F401
 from virtualbricks.console.command import (
     Arg,
     Choice,

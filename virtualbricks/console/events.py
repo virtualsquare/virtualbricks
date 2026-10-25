@@ -34,7 +34,7 @@ from twisted.internet import defer
 from twisted.internet.interfaces import IReactorTime
 
 from virtualbricks.brickfactory import BrickFactory
-from virtualbricks.bricks import eventinfo
+from virtualbricks.bricks import eventinfo, is_running
 from virtualbricks.bricks.draft import Draft, apply
 from virtualbricks.bricks.event import Event
 from virtualbricks.bricks.eventinfo import LABELS, Action, Kind
@@ -46,14 +46,13 @@ from virtualbricks.console.command import (
     CommandError,
     Context,
     Flag,
+    KeyValues,
     Named,
     Number,
-    KeyValues,
     command,
 )
 from virtualbricks.console.output import table
 from virtualbricks.i18n import N_, _
-from virtualbricks.bricks import is_running
 
 # the name an event gets, as New Event, when none is given
 NEW_EVENT = "new_event"

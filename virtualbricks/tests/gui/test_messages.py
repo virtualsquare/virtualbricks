@@ -22,8 +22,8 @@ import json
 import attr
 from twisted.logger import (
     ILogObserver,
-    LogLevel,
     Logger,
+    LogLevel,
     eventAsText,
     globalLogPublisher,
 )

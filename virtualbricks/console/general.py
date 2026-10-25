@@ -24,6 +24,7 @@ from collections.abc import Generator
 
 from twisted.internet import defer
 
+from virtualbricks.bricks import brickinfo, eventinfo, is_running
 from virtualbricks.console.command import (
     NOUN_HELP,
     Arg,
@@ -36,11 +37,9 @@ from virtualbricks.console.command import (
     nouns,
     of_noun,
 )
-from virtualbricks.bricks import brickinfo, eventinfo
 from virtualbricks.console.output import table
 from virtualbricks.console.projects import refuse_running
 from virtualbricks.i18n import N_, _
-from virtualbricks.bricks import is_running
 
 
 class Topic(ArgKind):

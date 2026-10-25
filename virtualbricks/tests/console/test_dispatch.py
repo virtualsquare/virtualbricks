@@ -21,7 +21,6 @@ from twisted.internet import defer
 
 from virtualbricks import errors
 from virtualbricks.console import dispatch
-from virtualbricks.console.dispatch import check, run_command
 from virtualbricks.console.command import (
     Arg,
     CommandError,
@@ -29,6 +28,7 @@ from virtualbricks.console.command import (
     command,
     find,
 )
+from virtualbricks.console.dispatch import check, run_command
 from virtualbricks.tests import FakeLogger
 from virtualbricks.tests.console import ConsoleTestCase, own_commands
 

@@ -42,14 +42,13 @@ from virtualbricks.tests import (
     release,
     reset_settings,
 )
+from virtualbricks.tests.gui import has_display
 from virtualbricks.tests.migrate.fixtures import (
     CONFIG1,
     write,
     write_project,
     write_settings,
 )
-
-from virtualbricks.tests.gui import has_display
 
 if has_display:
     from gi.repository import Gtk

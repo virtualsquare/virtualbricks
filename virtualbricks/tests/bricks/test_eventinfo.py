@@ -21,15 +21,13 @@ import dataclasses
 
 from twisted.internet import task
 
+from virtualbricks.bricks import eventinfo
 from virtualbricks.bricks.eventaction import (
-    StopAction,
-    StartAction,
     ConsoleAction,
     ShellAction,
+    StartAction,
+    StopAction,
 )
-from virtualbricks.tests import BrickTestCase
-
-from virtualbricks.bricks import eventinfo
 from virtualbricks.bricks.eventinfo import (
     Action,
     Kind,
@@ -43,6 +41,7 @@ from virtualbricks.bricks.eventinfo import (
     triggers,
     write,
 )
+from virtualbricks.tests import BrickTestCase
 
 
 class Scheduled:
