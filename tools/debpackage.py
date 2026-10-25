@@ -92,6 +92,8 @@ SOURCE = TARGETS["debian-13"].image
 NO_INSTALL = 10
 NO_CONSOLE = 11
 NO_WINDOWS = 12
+# The mode that Git gives a submodule in its index.
+SUBMODULE = "160000"
 
 # As root: the files of $1 copied; their sdist in $2.
 SDIST = """\
@@ -233,18 +235,25 @@ def sdist_version(path: str) -> str:
 
 
 def tracked(root: str) -> list[str]:
-    """The files of root that Git tracks and that are there."""
+    """The files of root that Git tracks and that are there; not its
+    submodules, as the theme of the site, which are folders."""
 
-    names = subprocess.run(
-        ["git", "-C", root, "ls-files", "-z"],
+    entries = subprocess.run(
+        ["git", "-C", root, "ls-files", "-z", "--stage"],
         check=True,
         capture_output=True,
     ).stdout.decode("utf-8")
-    return [
-        name
-        for name in names.split("\0")
-        if name and os.path.lexists(os.path.join(root, name))
-    ]
+    names = []
+    for entry in entries.split("\0"):
+        if not entry:
+            continue
+        # mode, object and stage, a tab, the path
+        info, name = entry.split("\t", 1)
+        if info.split()[0] == SUBMODULE:
+            continue
+        if os.path.lexists(os.path.join(root, name)):
+            names.append(name)
+    return names
 
 
 def copy_tracked(root: str, folder: str) -> None:

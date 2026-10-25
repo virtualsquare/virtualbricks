@@ -761,6 +761,25 @@ class TestDebPackage(unittest.TestCase):
         with open(os.path.join(copy, "a.txt"), encoding="utf-8") as fp:
             self.assertEqual(fp.read(), "edited\n")
 
+    def test_copy_tracked_without_submodules(self):
+        """A submodule, as the theme of the site, is a folder: not copied."""
+        repo = os.path.join(self.folder, "repo")
+        make_repo(repo)
+        # a commit of another repository, which Git doesn't look for
+        commit = "1" * 40
+        git(
+            repo,
+            "update-index",
+            "--add",
+            "--cacheinfo",
+            f"160000,{commit},sub",
+        )
+        os.makedirs(os.path.join(repo, "sub"))
+        write(repo, "sub/theme.txt", "t\n")
+        copy = os.path.join(self.folder, "copy")
+        self.tool.copy_tracked(repo, copy)
+        self.assertEqual(sorted(os.listdir(copy)), ["a.txt", "docs"])
+
     def test_lfs_pointers(self):
         """The pictures that are pointers, not the others."""
         os.makedirs(os.path.join(self.folder, "figures"))
