@@ -19,7 +19,7 @@
 
 set -eu
 
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/.."
 
 DOMAIN=virtualbricks
 POTDIR=locale/$DOMAIN

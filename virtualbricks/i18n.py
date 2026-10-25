@@ -49,7 +49,7 @@ def N_(message: str) -> str:
     For a text that stays in English in one place and is translated in
     another: the labels and the help of the settings, English in the
     comments of the files, translated with ``_()`` where a window shows
-    them. ``l10n.sh`` extracts the marked messages.
+    them. ``tools/l10n.sh`` extracts the marked messages.
     """
 
     return message

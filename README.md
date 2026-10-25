@@ -501,7 +501,7 @@ pre-commit run --all-files     # run them without committing
   [e2e/README.md](e2e/README.md#the-pictures-of-the-user-guide). The tests
   check the Mallard pages with `yelp-check`, of the Yelp tools (`yelp-tools`
   in Debian), where it is installed.
-- **translations**: `./l10n.sh` extracts the messages of the sources into
+- **translations**: `tools/l10n.sh` extracts the messages of the sources into
   `locale/virtualbricks/virtualbricks.pot`, merges them into the `.po` file of
   each language and compiles the `.mo` catalogs, which are committed too. It
   needs the GNU gettext tools: `xgettext`, `msgmerge` and `msgfmt` (`gettext`
@@ -527,7 +527,7 @@ python tools/typecoverage.py virtualbricks/config e2e
 ```
 
 The messages that the user reads go through `_()`, from `virtualbricks.i18n`.
-To add a language, see the top of `l10n.sh`.
+To add a language, see the top of `tools/l10n.sh`.
 
 ### Debian packages
 
@@ -632,8 +632,8 @@ distribution from it and runs lintian, without installing it.
   how a page is written. In `redesign/`, the designs of the parts that were
   rewritten, numbered in the order of the work, from the conversion of the
   Glade files to the console.
-- `tools/`: the scripts of the development, as `typecoverage.py` and
-  `targetsuite.py`.
+- `tools/`: the scripts of the development, as `typecoverage.py`,
+  `targetsuite.py` and `l10n.sh`, which updates the translations.
 - `website/`: the site, <https://www.virtualbricks.it>, built with Pelican:
   its news and pages in `content/`, and the user guide of `docs/built/html`,
   which a plugin copies into it; `website/README.md` tells how to build
