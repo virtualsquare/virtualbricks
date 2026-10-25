@@ -3,70 +3,204 @@
   <info>
     <link type="guide" xref="index#lab"/>
     <link type="seealso" xref="bricks#menu"/>
+    <link type="seealso" xref="console"/>
     <title type="sort">4</title>
-    <desc>Start a lab in order, after a delay, or run commands.</desc>
+    <desc>Start a lab in order, start bricks along with another, run commands.</desc>
   </info>
   <title>Events</title>
-  <p>An event waits a number of seconds, then runs its actions, all at once: an action doesn't wait for the one before. An action can:</p>
-  <list>
+  <p>An event waits a number of seconds, then runs its actions. With events, a lab starts in order, the machines after the router they need; a brick starts or stops others when it starts or stops; and a command runs at the right time, as one that gives a tap its address.</p>
+  <p>The events are part of the project, and go into its archives. None of them starts when the project opens: start them, or let a brick start them.</p>
+  <terms>
+    <title>The states</title>
     <item>
-      <p><gui>Start a brick</gui> or <gui>Stop a brick</gui>;</p>
+      <title><gui>Ready</gui></title>
+      <p>The event has actions, and doesn't wait: it can start.</p>
     </item>
     <item>
-      <p><gui>Start an event</gui> or <gui>Stop an event</gui>;</p>
+      <title><gui>Waiting</gui></title>
+      <p>It waits, and its row counts down the seconds left, as <gui>Waiting · 12 s</gui>. Then it runs its actions, and is <gui>Ready</gui> again.</p>
     </item>
     <item>
-      <p>run a <gui>Console command</gui> of Virtualbricks, as <cmd>brick set vm1 memory=512</cmd>;</p>
+      <title><gui>Not configured</gui></title>
+      <p>It has no action, and can't start until you add one; the tooltip of the state says so.</p>
     </item>
-    <item>
-      <p>run a <gui>Shell command</gui> of this computer.</p>
-    </item>
-  </list>
-  <section id="tab">
-    <title>The Events tab</title>
-    <p><gui>New Event</gui> asks for a <gui>Name</gui> and the seconds to wait, then shows the settings of the event: <gui>Add Action</gui> adds an action, and the button beside an action removes it.</p>
+  </terms>
+  <section id="new">
+    <title>Making an event</title>
+    <steps>
+      <item>
+        <p>In the <gui>Events</gui> tab, click <gui>New Event</gui>.</p>
+      </item>
+      <item>
+        <p>Give it a <gui>Name</gui>, or keep the one it suggests, and the seconds to <gui>Wait</gui>, then click <gui>Create</gui>. Its settings show in place of the list.</p>
+      </item>
+      <item>
+        <p>Click <gui>Add Action</gui>, then choose what the action does, as <gui>Start a brick</gui>, and which brick.</p>
+      </item>
+      <item>
+        <p>Add the other actions the same way, then click <gui>OK</gui>.</p>
+      </item>
+    </steps>
     <figure>
       <title>The settings of an event</title>
       <media type="image" mime="image/png" src="figures/event-settings.png">
         <p>The settings of new_event: wait 5 seconds, then Start a brick, sw1, with the button that removes the action beside it, and Add Action under it.</p>
       </media>
     </figure>
+    <p>To change an event, double-click its row, or select it and press <key>Enter</key>. In its settings, the number after <gui>Wait</gui> is the seconds, 0 to run the actions at once, and the button beside an action removes it. An action whose brick or event is no longer in the project names it with <gui>(missing)</gui>.</p>
+  </section>
+  <section id="actions">
+    <title>The actions</title>
+    <p>The actions run all at once, after the wait: an action doesn't wait for the one before. When an action must come after another, put it in a second event that waits longer; see <link xref="events#order"/>.</p>
+    <terms>
+      <item>
+        <title><gui>Start a brick</gui></title>
+        <p>Starts the brick, as its start button does: the bricks it plugs into start first. A brick that runs is left as it is.</p>
+      </item>
+      <item>
+        <title><gui>Stop a brick</gui></title>
+        <p>Stops the brick, as its stop button does: a virtual machine is asked to shut its system down.</p>
+      </item>
+      <item>
+        <title><gui>Start an event</gui></title>
+        <p>Starts an event, which then waits its own seconds before it runs its actions. An event that waits already goes on waiting, and doesn't start over. An event that starts itself runs its actions again after each wait, until you stop it: one that waits 60 seconds runs them every minute.</p>
+      </item>
+      <item>
+        <title><gui>Stop an event</gui></title>
+        <p>Stops an event while it waits: its actions don't run.</p>
+      </item>
+      <item>
+        <title><gui>Console command</gui></title>
+        <p>A command of the console of <app>Virtualbricks</app>, as <cmd>brick set vm1 memory=512</cmd>; see <link xref="console"/>. While the command is wrong, a warning sign shows in its field, and its tooltip says why.</p>
+      </item>
+      <item>
+        <title><gui>Shell command</gui></title>
+        <p>A command of this computer, which <cmd>sh</cmd> runs, as <cmd>logger lab started</cmd>. It runs in the folder where Virtualbricks was started, with its environment, so give whole paths. It has no terminal: it can't ask for anything, and what it prints is lost. The <gui>Logs</gui> window says how it ended, as <gui>Process ended with exit code 0</gui>.</p>
+      </item>
+    </terms>
+    <p>In the windows of another computer (see <link xref="remote"/>), the events run on the lab machine, and so do their shell commands.</p>
+  </section>
+  <section id="tab">
+    <title>The Events tab</title>
+    <p>The <gui>Events</gui> tab has a row for each event: its name; what it does, in words; its state; a button that starts or stops it; and the button of its menu. When bricks start the event, the row says which, as <sys>After 30 s, starts vm2 and vm3 · when vm1 starts</sys>.</p>
+    <figure>
+      <title>The Events tab</title>
+      <media type="image" mime="image/png" src="figures/events.png">
+        <p>The Events tab with four rows, all Ready: clients, which starts vm2 and vm3 after 30 s, when vm1 starts; link_down, which stops wire1 and starts the event link_up after 30 s; link_up, which starts wire1 and the event link_down after 30 s; and tap1_up, which runs a command on the host after 2 s, too long for its row.</p>
+      </media>
+    </figure>
+    <p>Above the list, <gui>New Event</gui> makes an event, and the search field finds one by name. <gui>All</gui> and <gui>Waiting</gui> switch between all the events and only those that wait. <gui>Start All</gui> starts every event that is <gui>Ready</gui>, and <gui>Stop All</gui> stops those that wait.</p>
     <p>The row of an event and its menu have:</p>
     <terms>
       <item>
         <title><gui>Start</gui>, <gui>Stop</gui></title>
-        <p>Start the event: it waits, then runs its actions. Stop an event that waits, before it runs them. <gui>Waiting</gui>, above the list, shows only the events that wait.</p>
+        <p>Start the event: it waits, then runs its actions. Stop an event that waits, before it runs them.</p>
       </item>
       <item>
         <title><gui>Run Now</gui></title>
-        <p>Run the actions now, without waiting.</p>
+        <p>Run the actions now, without waiting. An event that waits goes on waiting.</p>
       </item>
       <item>
         <title><gui>Configure…</gui>, <gui>Rename…</gui>, <gui>Duplicate</gui>, <gui>Delete…</gui></title>
-        <p>As for a brick. Before an event goes, the dialog says what goes with it: the actions of the other events that start or stop it, and the bricks that will no longer run it.</p>
+        <p>As for a brick. A rename follows the event into the actions and the bricks that name it. Before an event goes, the dialog says what goes with it: the actions of the other events that start or stop it, and the bricks that will no longer run it.</p>
       </item>
     </terms>
   </section>
-  <section id="order">
-    <title>Starting a lab in order</title>
-    <p>Some systems need the network up before they start. Make an event that starts the switches, and one that waits a few seconds and starts the machines; then start both:</p>
+  <section id="bricks">
+    <title>When a brick starts or stops</title>
+    <p>A brick can start an event each time it starts, and another each time it stops:</p>
     <steps>
       <item>
-        <p>Make the event <sys>network</sys>, which waits 0 seconds, with an action that starts each switch.</p>
+        <p>Make the event; see <link xref="events#new"/>.</p>
       </item>
       <item>
-        <p>Make the event <sys>machines</sys>, which waits 10 seconds, with an action that starts each machine.</p>
+        <p>Open the menu of the brick, in the <gui>Bricks</gui> tab or in the picture of the <gui>Topology</gui> tab.</p>
       </item>
       <item>
-        <p>Make the event <sys>lab</sys>, which waits 0 seconds, with the actions <gui>Start an event</gui> <sys>network</sys> and <gui>Start an event</gui> <sys>machines</sys>.</p>
+        <p>In <gui>When It Starts</gui>, or <gui>When It Stops</gui>, choose the event. <gui>No Event</gui> takes it away.</p>
+      </item>
+    </steps>
+    <figure>
+      <title>When It Starts, in the menu of a brick</title>
+      <media type="image" mime="image/png" src="figures/when-it-starts.png">
+        <p>The Bricks tab with sw1 and tap1, a tap on sw1, and the menu of tap1 open on When It Starts: No Event, then the event tap1_up, which is chosen.</p>
+      </media>
+    </figure>
+    <p>A brick has one event for its start and one for its stop, and an event can be that of many bricks. The row of the event, in the <gui>Events</gui> tab, says which bricks start it.</p>
+    <terms>
+      <item>
+        <title><gui>When It Starts</gui></title>
+        <p>The event starts as soon as the program of the brick runs, not once the brick is ready: the system of a virtual machine is still booting, and a tap may not have its interface yet. Give the event the seconds that the brick needs. A brick that runs already, and a start that fails or that a stop calls off, don't start it.</p>
       </item>
       <item>
-        <p>Start <sys>lab</sys>.</p>
+        <title><gui>When It Stops</gui></title>
+        <p>The event starts each time the program of the brick ends: with <gui>Stop</gui>, <gui>Kill</gui>, or by itself, as when the system of a virtual machine shuts down, or when the program fails.</p>
+      </item>
+    </terms>
+    <p><gui>Restart</gui>, in the menu of a brick that runs, starts the event of its stop, then that of its start. A brick that starts because another plugs into it starts its own event too. A switch wrapper starts them when the switch of its folder comes and goes.</p>
+    <p>An event without actions, or one that is no longer in the project, isn't started, and the <gui>Logs</gui> window says so; the menu names a missing event with <gui>(missing)</gui>.</p>
+  </section>
+  <section id="order">
+    <title>Starting a lab in order</title>
+    <p>Starting a machine starts first the switches it plugs into, but not the machines it needs: a router, or a server that gives the addresses, must have booted before the other machines ask for it. Say that <sys>vm1</sys> is the router, and <sys>vm2</sys> and <sys>vm3</sys> need it:</p>
+    <steps>
+      <item>
+        <p>Make the event <sys>clients</sys>, which waits 30 seconds, with the actions <gui>Start a brick</gui> <sys>vm2</sys> and <gui>Start a brick</gui> <sys>vm3</sys>.</p>
+      </item>
+      <item>
+        <p>In the menu of <sys>vm1</sys>, choose <sys>clients</sys> in <gui>When It Starts</gui>.</p>
+      </item>
+      <item>
+        <p>Start <sys>vm1</sys>: the others start 30 seconds later. So they do each time the router starts, from its button, from <gui>Start All</gui> or from an event.</p>
+      </item>
+    </steps>
+    <p>Without <gui>When It Starts</gui>, a second event does it: <sys>lab</sys>, which waits 0 seconds, with the actions <gui>Start a brick</gui> <sys>vm1</sys> and <gui>Start an event</gui> <sys>clients</sys>. Then start <sys>lab</sys>, not <sys>vm1</sys>.</p>
+  </section>
+  <section id="tap">
+    <title>The address of a tap</title>
+    <p>Virtualbricks doesn't give a tap its address yet: its settings say so. An event of its start can, with the command <cmd>ip</cmd>. The interface of this computer takes the name of the tap, as <sys>tap1</sys>:</p>
+    <steps>
+      <item>
+        <p>Make the event <sys>tap1_up</sys>, which waits 2 seconds, with the action <gui>Shell command</gui> <cmd>sudo -A ip addr add 10.0.0.254/24 dev tap1 &amp;&amp; sudo -A ip link set tap1 up</cmd>.</p>
+      </item>
+      <item>
+        <p>In the menu of <sys>tap1</sys>, choose <sys>tap1_up</sys> in <gui>When It Starts</gui>.</p>
+      </item>
+    </steps>
+    <p>The command runs as root, through <cmd>sudo</cmd>, which can't ask for your password on a terminal, as for the tap itself: <code>-A</code> asks in a window, with a helper; see <link xref="problems#sudo"/>. If <cmd>sudo</cmd> asks for your password to start the tap, the interface is there only once you typed it: wait more seconds.</p>
+  </section>
+  <section id="flap">
+    <title>A link that goes down and up</title>
+    <p>Stopping the wire between two switches cuts the link between them, and starting it again mends it. Two events that start each other cut it every 30 seconds:</p>
+    <steps>
+      <item>
+        <p>Make the events <sys>link_down</sys> and <sys>link_up</sys>, each of them waiting 30 seconds, and click <gui>OK</gui> in their settings without adding actions.</p>
+      </item>
+      <item>
+        <p>Give <sys>link_down</sys> the actions <gui>Stop a brick</gui> <sys>wire1</sys> and <gui>Start an event</gui> <sys>link_up</sys>.</p>
+      </item>
+      <item>
+        <p>Give <sys>link_up</sys> the actions <gui>Start a brick</gui> <sys>wire1</sys> and <gui>Start an event</gui> <sys>link_down</sys>.</p>
+      </item>
+      <item>
+        <p>Start <sys>link_down</sys>. <gui>Stop All</gui>, above the list of events, ends it.</p>
       </item>
     </steps>
   </section>
-  <section id="bricks">
-    <title>An event when a brick starts or stops</title>
-    <p>In the menu of a brick, <gui>When It Starts</gui> and <gui>When It Stops</gui> choose an event to start each time the brick starts or stops, as one that runs a shell command of this computer once a tap is up.</p>
+  <section id="console">
+    <title>From the console</title>
+    <p>The <cmd>event</cmd> commands of the console do the same, and <cmd>brick set</cmd> chooses the event of a brick, as <sys>on_start</sys> and <sys>on_stop</sys>:</p>
+    <screen>event new clients
+event set clients delay=30
+event action add clients start vm2
+event action add clients start vm3
+brick set vm1 on_start=clients
+event show clients</screen>
+    <p>A command of the console or of the shell goes in quotes, as <cmd>event action add lab shell "logger lab started"</cmd>. <cmd>event show</cmd> numbers the actions, which <cmd>event action remove</cmd> and <cmd>event action move</cmd> take, and <cmd>brick set vm1 on_start=</cmd>, with nothing after <code>=</code>, takes the event away. A file of commands that ends with <cmd>event start lab</cmd>, run with <cmd>virtualbricks --run <var>file</var></cmd>, starts the lab as Virtualbricks starts. Every command is in <link xref="command-line">virtualbricks(1)</link>.</p>
+  </section>
+  <section id="problems">
+    <title>When an event goes wrong</title>
+    <p>An action that fails doesn't stop the others: a brick that can't start, a console command with an error, a brick or an event that is no longer in the project. The <gui>Logs</gui> window says which one failed and why, as <sys>Event lab, action 1, start vm1: …</sys>, and <sys>source:lab</sys> in its filter keeps the messages of the event <sys>lab</sys>; see <link xref="problems#logs"/>.</p>
+    <p>A brick or an event renamed is renamed in the actions that start or stop it, but not in the console and shell commands, which keep the old name: change them by hand.</p>
   </section>
 </page>

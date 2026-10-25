@@ -103,7 +103,8 @@ The button at the end of the row, the right button of the mouse, the
 
 **When It Starts**, **When It Stops**
 
-:   An event to run when the brick starts or stops; see [](events).
+:   The event to start each time the brick starts, or each time it stops;
+    **No Event** for none. See [](events#bricks).
 
 **Resume**
 

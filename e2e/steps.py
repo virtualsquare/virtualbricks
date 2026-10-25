@@ -1878,6 +1878,21 @@ def default_workspace(virtualbricks):
     os.makedirs(virtualbricks.workspace, exist_ok=True)
 
 
+@given(words("the project {name:Project} has the project.toml"))
+def project_has_toml(virtualbricks, name, docstring):
+    """
+    The folder of the project, in the workspace, has the file of the
+    project, with the text under the step; before Virtualbricks starts,
+    which opens new_project at its first start.
+    """
+
+    assert virtualbricks.process is None, "Virtualbricks runs already"
+    project = os.path.join(virtualbricks.workspace, name)
+    os.makedirs(project, exist_ok=True)
+    with open(os.path.join(project, "project.toml"), "w") as file:
+        file.write(docstring + "\n")
+
+
 @given(
     words("the files of my {folder:Folder} folder were last changed on {day}")
 )
@@ -3541,6 +3556,19 @@ def choose_event(virtualbricks, event, submenu, name):
     virtualbricks.click("radio button", event)
     virtualbricks.key("Escape", virtualbricks.find("frame"))
     virtualbricks.gone("radio button", event)
+
+
+@when(words("I open {submenu}, in the menu of {name:Brick}"))
+def open_when_it(virtualbricks, submenu, name):
+    """
+    In the menu of the brick, When It Starts or When It Stops, which stays
+    open on its choices: No Event first.
+    """
+
+    assert submenu in WHEN_IT, f"{submenu} is none of {WHEN_IT}"
+    virtualbricks.click("button", f"Menu of {name}")
+    virtualbricks.click("button", submenu)
+    virtualbricks.find("radio button", "No Event")
 
 
 def event_state(row):

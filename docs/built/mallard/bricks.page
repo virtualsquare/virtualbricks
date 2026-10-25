@@ -76,7 +76,7 @@
       </item>
       <item>
         <title><gui>When It Starts</gui>, <gui>When It Stops</gui></title>
-        <p>An event to run when the brick starts or stops; see <link xref="events"/>.</p>
+        <p>The event to start each time the brick starts, or each time it stops; <gui>No Event</gui> for none. See <link xref="events#bricks"/>.</p>
       </item>
       <item>
         <title><gui>Resume</gui></title>

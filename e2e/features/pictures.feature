@@ -59,6 +59,95 @@ Feature: The pictures of the user guide
     Then the picture event-settings shows the main window
 
   @needs-qemu-system-i386
+  Scenario: The Events tab, with the events of the examples of the guide
+    Given the project new_project has the project.toml
+      """
+      format = 1
+
+      [events.clients]
+      delay = 30
+      actions = [
+          {kind = "start", target = "vm2"},
+          {kind = "start", target = "vm3"},
+      ]
+
+      [events.link_down]
+      delay = 30
+      actions = [
+          {kind = "stop", target = "wire1"},
+          {kind = "start", target = "link_up"},
+      ]
+
+      [events.link_up]
+      delay = 30
+      actions = [
+          {kind = "start", target = "wire1"},
+          {kind = "start", target = "link_down"},
+      ]
+
+      [events.tap1_up]
+      delay = 2
+      actions = [
+          {kind = "shell", command = "sudo -A ip addr add 10.0.0.254/24 dev tap1 && sudo -A ip link set tap1 up"},
+      ]
+
+      [bricks.sw1]
+      type = "switch"
+
+      [bricks.sw2]
+      type = "switch"
+
+      [bricks.wire1]
+      type = "wire"
+      endpoints = ["sw1", "sw2"]
+
+      [bricks.tap1]
+      type = "tap"
+      on_start = "tap1_up"
+      connect = "sw1"
+
+      [bricks.vm1]
+      type = "qemu"
+      on_start = "clients"
+      nics = [{kind = "plug", connect = "sw1", mac = "52:54:00:12:34:01"}]
+
+      [bricks.vm2]
+      type = "qemu"
+      nics = [{kind = "plug", connect = "sw2", mac = "52:54:00:12:34:02"}]
+
+      [bricks.vm3]
+      type = "qemu"
+      nics = [{kind = "plug", connect = "sw2", mac = "52:54:00:12:34:03"}]
+      """
+    And Virtualbricks is running
+    When I open the tab Events
+    Then the picture events shows the main window
+
+  Scenario: When It Starts, open in the menu of tap1
+    Given the project new_project has the project.toml
+      """
+      format = 1
+
+      [events.tap1_up]
+      delay = 2
+      actions = [
+          {kind = "shell", command = "sudo -A ip addr add 10.0.0.254/24 dev tap1 && sudo -A ip link set tap1 up"},
+      ]
+
+      [bricks.sw1]
+      type = "switch"
+
+      [bricks.tap1]
+      type = "tap"
+      on_start = "tap1_up"
+      connect = "sw1"
+      """
+    And Virtualbricks is running
+    When I open the tab Bricks
+    And I open When It Starts, in the menu of tap1
+    Then the picture when-it-starts shows the main window
+
+  @needs-qemu-system-i386
   Scenario: The Topology tab: sw1, and vm1 plugged into it
     Given Virtualbricks is running
     When I add the switch sw1

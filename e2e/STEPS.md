@@ -53,6 +53,7 @@ The steps of a user:
 | `When I start Virtualbricks again` | Starts it with its settings, as after it ran before, on a new screen, and waits for a window |
 | `Given the workspace is on a drive without a trash` | A folder in `/dev/shm` for the workspace, before Virtualbricks starts: a file system in memory that the system mounts, where the desktop makes no trash; removed once Virtualbricks has stopped |
 | `Given the workspace is the default one` | Before Virtualbricks starts: its workspace is `~/.virtualbricks`, that of its settings, as for a user who never chose another; the title of the main window names the project alone |
+| `Given the project new_project has the project.toml`, with a text under it | The folder of the project in the workspace, with the text in its `project.toml`; before Virtualbricks starts, which opens `new_project` at its first start |
 | `When I open the Projects window` | Projects…, in the menu Projects |
 | `When the projects were last saved on 2024-08-02` | The file of each project of the workspace last changed on the day, at noon: the Projects window says that day, not the time of the scenario |
 | `Given the files of my Downloads folder were last changed on 2024-08-02` | Each file of the folder of the home last changed on the day, at noon: a file chooser says that day, not the time of the scenario. Also `of my home folder` |
@@ -186,6 +187,7 @@ The steps of the events, in the tab Events:
 | `Then project.toml has the event new_event, without actions` | The event is in the file of the project, with no action |
 | `When I run the event new_event now, from its menu` | Run Now, in its menu, in the tab Events; then the menu closes |
 | `When I choose new_event in When It Starts, in the menu of sw1` | In the menu of the brick, When It Starts or When It Stops, then the event, and Escape, as a choice leaves the menu open. The choices of a menu of GTK 3 don't tell AT-SPI which is on: the row of the event says it, `· when sw1 starts` |
+| `When I open When It Starts, in the menu of tap1` | In the menu of the brick, When It Starts or When It Stops, which stays open on its choices, No Event first: as the picture of the guide shows it |
 | `Then new_event counts down from 2 seconds, then starts sw1` | Its row says `Waiting · 2 s`, then `Waiting · 1 s`, each in turn, while no process of sw1 runs; then Ready, and a process of sw1 runs |
 | `Then the list of events has`, with a table under it | The rows of the tab Events, all of them and in order, once they are those of the table: the name of each event, its detail and its state; with only the titles of the columns, no event, as the tab says No Events Yet |
 
