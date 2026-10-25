@@ -120,6 +120,16 @@ in 3.0: they wait until after it.
   while fixing "A brick that is starting counts as stopped"; not run.
   Likely fix: a `starting` fact, pushed when a start begins and ends, and
   the copy's `starting()` reading it.
+- [ ] *Later.* **`source:` doesn't keep the messages of a brick there.**
+  In the Logs window of `--connect`, a message of the Virtualbricks there
+  comes from `sw1 on lab.example` (`MessageLog.add_message()` in
+  `virtualbricks/gui/messages.py`), and `Filter.match()` compares the
+  names of `source:` with the whole of it: `source:sw1` keeps none of the
+  messages of `sw1`. `source:switch` keeps them, by the kind, and so does
+  the word `sw1`. Seen on 3.0.0.dev8, on 25 October 2026, writing the
+  page of the Logs window; checked with a `MessageLog` and
+  `parse_filter("source:sw1")`. Likely fix: an entry keeps the name of
+  its brick apart from where it runs, and `source:` reads the name.
 
 ## Settings
 
