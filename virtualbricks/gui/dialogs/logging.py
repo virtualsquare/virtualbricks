@@ -649,7 +649,7 @@ class LoggingWindow(Window):
     them, to clear them and to report a bug.
     """
 
-    help_page = "problems"
+    help_page = "logs"
 
     def __init__(self, messages: MessageLog) -> None:
         self.messages = messages

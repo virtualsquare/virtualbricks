@@ -209,6 +209,9 @@ class Virtualbricks:
         # the programs it finds in place of those of this computer: {name:
         # the text of a script}
         self.replaced = {}
+        # the time of its first message, as 2024-08-02 10:00:00, for the
+        # clock of logclock.py; None for the time of this computer
+        self.log_clock = None
 
     def make_home(self):
         """Its first settings, those of GTK, and its workspace."""
@@ -307,9 +310,9 @@ class Virtualbricks:
     def arguments(self, options):
         """
         Its command line, with options: those of the tests first, its
-        workspace and no terminal, and no lock unless options name one; a
-        Virtualbricks that talks to another, with --command or --connect,
-        has only the workspace.
+        workspace and no terminal, no lock unless options name one, and the
+        clock of logclock.py if it has one; a Virtualbricks that talks to
+        another, with --command or --connect, has only the workspace.
         """
 
         words = [sys.executable, "-c", LAUNCH]
@@ -317,6 +320,8 @@ class Virtualbricks:
             words.append("--no-term")
             if not any(option.startswith("--lock") for option in options):
                 words += ["--lock", "none"]
+            if self.log_clock is not None:
+                words += ["--logger", "e2e.logclock.observer"]
         # the words of --command come last
         return words + ["--workspace", self.workspace, *options]
 
@@ -348,6 +353,8 @@ class Virtualbricks:
             env.update(
                 GDK_BACKEND="broadway", BROADWAY_DISPLAY=self.screen.display
             )
+        if self.log_clock is not None:
+            env["E2E_LOG_CLOCK"] = self.log_clock
         if self.hidden or self.replaced:
             env["PATH"] = self.own_path(env.get("PATH", ""))
         return env

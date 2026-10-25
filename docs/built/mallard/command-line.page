@@ -29,19 +29,19 @@
     <terms>
       <item>
         <title><code>-v</code>, <code>--verbose</code></title>
-        <p>Log more; it can be repeated.</p>
+        <p>Write the debug messages too in the file of <code>--logfile</code>.</p>
       </item>
       <item>
         <title><code>-q</code>, <code>--quiet</code></title>
-        <p>Log less; it can be repeated.</p>
+        <p>Write only the warnings and the errors in the file of <code>--logfile</code>; given twice, only the errors.</p>
       </item>
       <item>
         <title><code>-b</code>, <code>--debug</code></title>
-        <p>Log everything.</p>
+        <p>The same as <code>-v</code>.</p>
       </item>
       <item>
         <title><code>-l</code> <var>file</var>, <code>--logfile</code> <var>file</var></title>
-        <p>Write the log messages to <var>file</var>; <code>-</code> for the standard output.</p>
+        <p>Write the log messages to <var>file</var>, as they come: the information, the warnings and the errors, unless <code>-v</code> or <code>-q</code> says otherwise; <code>-</code> for the standard output. The Logs window has the information, the warnings and the errors, whatever these options say.</p>
       </item>
       <item>
         <title><code>--logger</code> <var>name</var></title>

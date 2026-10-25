@@ -16,31 +16,13 @@ href="index.html#beyond">Settings and beyond</a></p>
 <h1>When something goes wrong</h1>
 <h2 id="logs">The messages</h2>
 <p><span class="guiseq"><span class="gui">File</span> › <span
-class="gui">Logs</span></span> opens the messages of the run: those of
-Virtualbricks, of its bricks, and what their programs print, on a grey
-band, with <code class="sys">2&gt;</code> before what a program writes
-on its standard error. The field at the top filters as you type
-(<kbd>Ctrl</kbd>+<kbd>F</kbd>):</p>
-<dl>
-<dt><code>level:warning</code></dt>
-<dd>
-<p>The warnings and the errors, with what the programs wrote on their
-standard error.</p>
-</dd>
-<dt><code>source:tap1,vm1</code></dt>
-<dd>
-<p>The messages of those bricks; <code>source:qemu</code>, those of
-every virtual machine.</p>
-</dd>
-<dt>any other word</dt>
-<dd>
-<p>The messages that have it.</p>
-</dd>
-</dl>
-<p>The menu of the window has <span class="gui">Save…</span>, which
-writes every message to a file, whatever the filter, and <span
-class="gui">Report a bug…</span>, which opens a new email in your mail
-program, with the messages attached.</p>
+class="gui">Logs</span></span> has the messages of the run: those of
+Virtualbricks, of its bricks, and what their programs print.
+<code>level:warning</code> in its filter keeps the warnings and the
+errors, with what the programs wrote on their standard error;
+<code>source:tap1</code> keeps the messages of the brick <code
+class="sys">tap1</code>. All about the window is in <a
+href="logs.html">The Logs window</a>.</p>
 <h2 id="start">A brick doesn't start</h2>
 <ul>
 <li><p><span class="gui">Not connected</span>: a plug of the brick goes
@@ -56,7 +38,9 @@ wrapper the folder of a switch that runs.</p></li>
 message about a program: the program isn't installed; see <a
 href="programs.html">The programs it needs</a>.</p></li>
 <li><p>Otherwise, filter the <span class="gui">Logs</span> window with
-the name of the brick: the program says why it stopped.</p></li>
+<code>source:</code> and the name of the brick, as
+<code>source:tap1</code>: its message <code class="sys">Starting:</code>
+has the command it runs, and the program says why it stopped.</p></li>
 </ul>
 <h2 id="sudo">A tap or a capture interface doesn't start</h2>
 <p>They run as root, through <code class="cmd">sudo</code>, which can't
@@ -93,10 +77,18 @@ file, as a value out of range, takes the default and is reported in the
 <p>Tell us what broke at <a
 href="https://github.com/virtualsquare/virtualbricks/issues">github.com/virtualsquare/virtualbricks/issues</a>,
 and attach the messages: <span class="gui">Save…</span>, in the menu of
-the <span class="gui">Logs</span> window, writes them to a file.</p>
+the <span class="gui">Logs</span> window, writes them to a file; see <a
+href="logs.html#save">Saving and reporting</a>.</p>
 <section id="seealso" class="seealso">
 <h2>See also</h2>
 <div class="links">
+<div class="link">
+<p><a href="logs.html">The Logs window</a></p>
+<div class="desc">
+<p>The messages of Virtualbricks, of its bricks and of their programs:
+read, filter and save them.</p>
+</div>
+</div>
 <div class="link">
 <p><a href="programs.html">The programs it needs</a></p>
 <div class="desc">

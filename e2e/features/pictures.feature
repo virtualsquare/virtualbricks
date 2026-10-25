@@ -192,6 +192,32 @@ Feature: The pictures of the user guide
     When I open the Settings window
     Then the picture settings shows the Settings window
 
+  @needs-vde_switch
+  Scenario: The Logs window, once sw1 started and sudo refused to start tap1
+    Given the messages start on 2024-08-02 at 10:00:00
+    And sudo can't ask for the password
+    And the project new_project has the project.toml
+      """
+      format = 1
+
+      [bricks.sw1]
+      type = "switch"
+
+      [bricks.tap1]
+      type = "tap"
+      connect = "sw1"
+      """
+    And Virtualbricks is running
+    When I quit Virtualbricks
+    Then Virtualbricks has quit
+    When I start Virtualbricks again
+    And I start sw1
+    And I try to start tap1
+    And I close the error
+    And I open the messages window
+    And I filter the messages window with "level:warning"
+    Then the picture logs shows the Logs window
+
   Scenario: The menu Projects, open
     Given Virtualbricks is running
     When I open the menu "Projects"

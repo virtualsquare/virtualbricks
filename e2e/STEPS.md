@@ -147,6 +147,9 @@ The steps of a program that fails:
 | `Then the messages window has the output of sw1: "no switch today", and 2 more lines folded` | A line of the messages comes from sw1: the first line of the output of its program, after `2>`, and its toggle, `▸ 2 more lines`; no line of them shows under it |
 | `When I unfold the output of sw1 in the messages window` | A click on the toggle of the output of sw1, a run of the text of the window; then it says `▾` |
 | `Then the messages window has the output of sw1, unfolded`, with a text under it | The first line of the text is that of the output of sw1, with its toggle unfolded, `▾ 2 more lines`; the others show under it |
+| `When I filter the messages window with "level:warning"` | The text in the field of the filter, Search; then the status bar says how many of the messages show, as `2 of 9 messages` |
+| `Given the messages start on 2024-08-02 at 10:00:00` | Before Virtualbricks starts: its first message is at that time, local, and each next one 0.4 seconds after it, whenever they come, by the log observer of `e2e/logclock.py`, its `--logger`; the Logs window shows the same times at each run |
+| `Given sudo can't ask for the password` | Before Virtualbricks starts: `sudo` of its `PATH` is a script that writes `sudo: a password is required` on its standard error, as `sudo -n` does, and exits with 1; it runs nothing |
 
 The steps of a switch that another program runs, for a switch wrapper:
 
@@ -255,7 +258,7 @@ The steps of the user guide:
 | `Then Yelp opens "help:virtualbricks/settings"` | The program of the tests got the link, as Yelp, and only it |
 | `Then Yelp opens the page settings of the sources` | The program of the tests got the path of `docs/built/mallard/settings.page` of the sources, as Yelp, and only it: the desktop gives a file by its path |
 | `Then the browser opens the HTML of the page settings` | The program of the tests got the path of `docs/built/html/settings.html` of the sources, as browser, and only it |
-| `Then the picture settings shows the Settings window` | The picture of the window for the guide, as it shows, with the menus open over it: the pointer away from the windows first, once the screen hasn't changed for half a second. With `pytest --pictures`, `docs/guide/figures/settings.png`, if it changed; else `settings.png` in the folder of the scenario, which the end of the run lists if it differs from that of `docs/guide/figures/`. The windows: `main window`, `Settings window`, `Projects window`, `Export window`, `Import window`, and `file chooser`, the one that shows |
+| `Then the picture settings shows the Settings window` | The picture of the window for the guide, as it shows, with the menus open over it: the pointer away from the windows first, once the screen hasn't changed for half a second. With `pytest --pictures`, `docs/guide/figures/settings.png`, if it changed; else `settings.png` in the folder of the scenario, which the end of the run lists if it differs from that of `docs/guide/figures/`. The windows: `main window`, `Settings window`, `Projects window`, `Export window`, `Import window`, `Logs window`, and `file chooser`, the one that shows |
 
 The steps of the disk images:
 

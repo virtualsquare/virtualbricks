@@ -58,16 +58,20 @@ Virtualbricks of yours here. The bricks run there, the windows here. See
 # OPTIONS
 
 **-v**, **--verbose**
-:   Log more; it can be repeated.
+:   Write the debug messages too in the file of **--logfile**.
 
 **-q**, **--quiet**
-:   Log less; it can be repeated.
+:   Write only the warnings and the errors in the file of **--logfile**;
+    given twice, only the errors.
 
 **-b**, **--debug**
-:   Log everything.
+:   The same as **-v**.
 
 **-l** *file*, **--logfile** *file*
-:   Write the log messages to *file*; **-** for the standard output.
+:   Write the log messages to *file*, as they come: the information, the
+    warnings and the errors, unless **-v** or **-q** says otherwise; **-**
+    for the standard output. The Logs window has the information, the
+    warnings and the errors, whatever these options say.
 
 **--logger** *name*
 :   The fully qualified name of a log observer, instead of **--logfile**.

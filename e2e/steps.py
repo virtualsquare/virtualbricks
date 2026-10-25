@@ -4477,12 +4477,63 @@ def close_error(virtualbricks):
     virtualbricks.gone("alert", "Error")
 
 
+@given(words("the messages start on {day} at {clock}"))
+def messages_start(virtualbricks, day, clock):
+    """
+    Before Virtualbricks starts: its first message is at that time, as
+    2024-08-02 10:00:00, and each next one a moment after it, whenever they
+    come, as logclock.py dates them; the Logs window shows the same times
+    at each run.
+    """
+
+    assert virtualbricks.process is None, "Virtualbricks runs already"
+    virtualbricks.log_clock = f"{day} {clock}"
+
+
+# sudo -n, which Virtualbricks runs without an askpass helper, when the user
+# has no rule without a password
+SUDO_REFUSES = """\
+#!/bin/sh
+echo "sudo: a password is required" >&2
+exit 1
+"""
+
+
+@given("sudo can't ask for the password")
+def sudo_refuses(virtualbricks):
+    """
+    sudo, on the PATH of Virtualbricks, says what sudo -n says when it needs
+    a password, and runs nothing.
+    """
+
+    virtualbricks.replaced["sudo"] = SUDO_REFUSES
+
+
 @when("I open the messages window")
 def open_messages(virtualbricks):
     """Logs, in the menu File."""
 
     virtualbricks.choose("Logs", "File")
     virtualbricks.find("frame", "Logs")
+
+
+@when(words('I filter the messages window with "{text}"'))
+def filter_messages(virtualbricks, text):
+    """
+    The text in the field of the filter, at the top of the window; then the
+    status bar says how many of the messages show.
+    """
+
+    window = virtualbricks.find("frame", "Logs")
+    virtualbricks.type(text, "text", "Search", within=window)
+
+    def counted():
+        return any(
+            re.match(r"\d+ of \d+ messages? ", name)
+            for name in virtualbricks.names("label", within=window)
+        )
+
+    virtualbricks.wait_for(counted, "the status bar counts those that show")
 
 
 @then(words('the messages window has the output of {name:Brick}: "{text}"'))
@@ -5369,6 +5420,7 @@ PICTURED = {
     "Projects window": ("frame", PROJECTS_WINDOW),
     "Export window": ("frame", EXPORT_WINDOW),
     "Import window": ("frame", IMPORT_WINDOW),
+    "Logs window": ("frame", "Logs"),
     # the one that shows
     "file chooser": ("file chooser", None),
 }

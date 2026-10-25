@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<page xmlns="http://projectmallard.org/1.0/" type="topic" id="logs">
+  <info>
+    <link type="guide" xref="index#beyond"/>
+    <link type="seealso" xref="problems"/>
+    <title type="sort">4</title>
+    <desc>The messages of Virtualbricks, of its bricks and of their programs: read, filter and save them.</desc>
+  </info>
+  <title>The Logs window</title>
+  <p><guiseq><gui>File</gui><gui>Logs</gui></guiseq> opens the messages of this run of Virtualbricks: what it says as it opens a project or starts a brick, what the bricks and the events say, and what their programs print. When something goes wrong, look here first: the messages before an error often say why it happened.</p>
+  <p>An error also opens a window of its own as it happens; the <gui>Logs</gui> window keeps it, with what came before it.</p>
+  <figure>
+    <title>The Logs window, filtered with level:warning</title>
+    <media type="image" mime="image/png" src="figures/logs.png">
+      <p>The Logs window with level:warning in its filter. Under the line of the day, Friday 02 August 2024, two messages of tap1: at 10:00:02, what sudo wrote on its standard error, 2&gt; sudo: a password is required, with the symbol of a terminal; at 10:00:03, in red, the error Process terminated. process ended with exit code 1. The status bar says 2 of 9 messages, 1 error, 0 warnings, 1 line of program output, and Following the newest.</p>
+    </media>
+  </figure>
+  <section id="message">
+    <title>Reading a message</title>
+    <p>Each message is a line:</p>
+    <terms>
+      <item>
+        <title><gui>The time</gui></title>
+        <p>As <sys>10:00:02</sys>. A line with the date starts each day, and a time the same as the one above is fainter. Point at the time for the date, and the time to the millisecond.</p>
+      </item>
+      <item>
+        <title><gui>Where it comes from</gui></title>
+        <p>A brick or an event, in blue, after the picture of its kind; or else the part of Virtualbricks that speaks, in grey, as <sys>Project</sys>, <sys>Settings</sys> or <sys>Main window</sys>. A name longer than 14 characters ends with "…". Point at it for the whole name, the kind of the brick, the module of Virtualbricks that logged the message and the process id of the program.</p>
+      </item>
+      <item>
+        <title><gui>The level</gui></title>
+        <p>A symbol: information, a warning, an error, or a terminal for what a program printed. Point at it for the level in words.</p>
+      </item>
+      <item>
+        <title><gui>The message</gui></title>
+        <p>Its first line, orange for a warning, red for an error, bold red for a critical one; then what it folds.</p>
+      </item>
+    </terms>
+    <p>When a brick starts, its message says the command it runs, as <sys>Starting: /usr/bin/vde_switch -n 32 -s …</sys>: run it in a terminal to see what the program says. Select the text with the mouse, and copy it with <keyseq><key>Ctrl</key><key>C</key></keyseq>.</p>
+  </section>
+  <section id="folds">
+    <title>Folded lines</title>
+    <p>A message of more than one line shows the first, then <gui>▸ 2 more lines</gui>: click it to show the others under it, and again to hide them. An error inside Virtualbricks may have <gui>▸ traceback, 3 calls</gui> too, where in the code it happened, which a bug report needs. <gui>Expand all</gui> and <gui>Collapse all</gui>, in the menu of the window, open and close them all.</p>
+  </section>
+  <section id="output">
+    <title>What the programs print</title>
+    <p>The output of a program shows on a grey band, with <sys>2&gt;</sys> before what it writes on its standard error. It shows as it would in a terminal: a line that the program writes again, as the monitor of QEMU does with each command, shows as it ends up, and the colours are dropped. The lines that come together are one message, the first line in view and the others folded. A line the program doesn't end, as a prompt, shows with the next one, or when the program stops.</p>
+  </section>
+  <section id="filter">
+    <title>The filter</title>
+    <p>The field at the top keeps the messages that match what you type in it: <keyseq><key>Ctrl</key><key>F</key></keyseq> goes there, and <key>Esc</key> empties it. A message must match all the words, and upper or lower case doesn't matter:</p>
+    <terms>
+      <item>
+        <title><code>level:warning</code></title>
+        <p>The warnings and what is worse: the errors, and what the programs wrote on their standard error, which often explains them. Also <code>level:error</code>, <code>level:critical</code> and <code>level:info</code>, and <code>warn</code>, <code>err</code> and <code>crit</code> for short.</p>
+      </item>
+      <item>
+        <title><code>source:tap1,vm1</code></title>
+        <p>The messages of those bricks or events, or of a part of Virtualbricks, as <code>source:project</code>. A kind of brick keeps the messages of every brick of the kind: <code>source:qemu</code> those of the virtual machines; the others are <code>switch</code>, <code>switchwrapper</code>, <code>router</code>, <code>wire</code>, <code>netemu</code>, <code>tunnellisten</code>, <code>tunnelconnect</code>, <code>tap</code>, <code>capture</code> and <code>event</code>.</p>
+      </item>
+      <item>
+        <title>any other word</title>
+        <p>The messages that have it, in any of their lines, folded too, or in where they come from.</p>
+      </item>
+    </terms>
+    <p>The status bar then says how many of the messages show, as <gui>2 of 9 messages</gui>.</p>
+  </section>
+  <section id="follow">
+    <title>Following the newest</title>
+    <p><gui>Following</gui>, at the top, keeps the newest message in view as the messages come. Scroll up to read, and it lets go: the status bar says <gui>Paused</gui>. Scroll back to the end, or click <gui>Following</gui>, and it follows again. Opening the folded lines of an older message pauses it too.</p>
+    <p>The status bar counts the messages, then the errors, the warnings and the lines that the programs printed: of all the messages, whatever the filter.</p>
+  </section>
+  <section id="keep">
+    <title>What the window keeps</title>
+    <list>
+      <item>
+        <p>The messages since Virtualbricks started, the latest 2,000: then each new message pushes out the oldest. They are gone when Virtualbricks quits, so save them first; or start it with <cmd>virtualbricks --logfile <var>file</var></cmd>, which writes them in <var>file</var> as they come.</p>
+      </item>
+      <item>
+        <p>The information, the warnings and the errors, never the debug messages: <cmd>--logfile</cmd> writes those too with <cmd>-v</cmd>; see <link xref="command-line">virtualbricks(1)</link>.</p>
+      </item>
+      <item>
+        <p><guiseq><gui>File</gui><gui>Logs</gui></guiseq> opens a new window each time, with its own filter and folded lines. <gui>Clear</gui>, in the menu, empties them all.</p>
+      </item>
+      <item>
+        <p>The windows of another computer, with <cmd>--connect</cmd>, show the messages of the Virtualbricks there: the latest 500 it had when they connected, then the new ones, each with the computer after where it comes from, as <sys>sw1 on lab.example</sys>. See <link xref="remote"/>.</p>
+      </item>
+    </list>
+  </section>
+  <section id="save">
+    <title>Saving and reporting</title>
+    <p><gui>Save…</gui>, in the menu, writes all the messages to a file, whatever the filter, with their folded lines and tracebacks. Each starts with its date and time, the module that logged it and its level, as <sys>2024-08-02T10:00:03+0200 [virtualbricks.bricks.Process#error]</sys>.</p>
+    <p><gui>Report a bug…</gui> opens a new email in your mail program, with the version of Virtualbricks in it and the messages attached: write the address and what went wrong. Where to report a problem is in <link xref="problems#report"/>.</p>
+  </section>
+</page>

@@ -367,7 +367,10 @@ the main window doesn't name; the Projects window shows the projects as
 saved on a day of 2024, and a file chooser the files of the home as
 changed on that day; Virtualbricks shows the paths in the home with `~`,
 and a file chooser names the home by its folder, `user` in the temporary
-folder of the scenario; the pointer is away from the windows, the cursor
+folder of the scenario; the Logs window dates the messages from 10:00 of
+that day, as `e2e/logclock.py` does with `Given the messages start on`,
+and keeps out the paths of the scenario with its filter, as
+`level:warning`; the pointer is away from the windows, the cursor
 of a text doesn't blink, and the picture is taken once the screen has
 been still for half a second. A file chooser has the width of the main
 window, which the settings of GIO in the home give it.

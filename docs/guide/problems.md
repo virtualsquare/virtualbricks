@@ -4,35 +4,18 @@ desc: The messages, a brick that doesn't start, a refused start, a project that
 guide: "index#beyond"
 seealso:
 - programs
-sort: 4
+sort: 5
 ---
 
 # When something goes wrong
 
 ## The messages {#logs}
 
-**File › Logs** opens the messages of the run: those of Virtualbricks, of its
-bricks, and what their programs print, on a grey band, with `2>`{.sys} before
-what a program writes on its standard error. The field at the top filters as
-you type ([Ctrl+F]{.keyseq}):
-
-`level:warning`
-
-:   The warnings and the errors, with what the programs wrote on their standard
-    error.
-
-`source:tap1,vm1`
-
-:   The messages of those bricks; `source:qemu`, those of every virtual
-    machine.
-
-any other word
-
-:   The messages that have it.
-
-The menu of the window has **Save…**, which writes every message to a file,
-whatever the filter, and **Report a bug…**, which opens a new email in your
-mail program, with the messages attached.
+**File › Logs** has the messages of the run: those of Virtualbricks, of its
+bricks, and what their programs print. `level:warning` in its filter keeps the
+warnings and the errors, with what the programs wrote on their standard error;
+`source:tap1` keeps the messages of the brick `tap1`{.sys}. All about the window
+is in [](logs).
 
 ## A brick doesn't start {#start}
 
@@ -49,8 +32,9 @@ mail program, with the messages attached.
 - A warning sign in **New Brick**, or a message about a program: the program
   isn't installed; see [](programs).
 
-- Otherwise, filter the **Logs** window with the name of the brick: the program
-  says why it stopped.
+- Otherwise, filter the **Logs** window with `source:` and the name of the
+  brick, as `source:tap1`: its message `Starting:`{.sys} has the command it
+  runs, and the program says why it stopped.
 
 ## A tap or a capture interface doesn't start {#sudo}
 
@@ -88,4 +72,4 @@ about.
 Tell us what broke at
 [github.com/virtualsquare/virtualbricks/issues](https://github.com/virtualsquare/virtualbricks/issues),
 and attach the messages: **Save…**, in the menu of the **Logs** window, writes
-them to a file.
+them to a file; see [](logs#save).

@@ -76,21 +76,25 @@ VIRTUALBRICKS</code>.</p>
 <dl>
 <dt><code>-v</code>, <code>--verbose</code></dt>
 <dd>
-Log more; it can be repeated.
+Write the debug messages too in the file of <code>--logfile</code>.
 </dd>
 <dt><code>-q</code>, <code>--quiet</code></dt>
 <dd>
-Log less; it can be repeated.
+Write only the warnings and the errors in the file of
+<code>--logfile</code>; given twice, only the errors.
 </dd>
 <dt><code>-b</code>, <code>--debug</code></dt>
 <dd>
-Log everything.
+The same as <code>-v</code>.
 </dd>
 <dt><code>-l</code> <em>file</em>, <code>--logfile</code>
 <em>file</em></dt>
 <dd>
-Write the log messages to <em>file</em>; <code>-</code> for the standard
-output.
+Write the log messages to <em>file</em>, as they come: the information,
+the warnings and the errors, unless <code>-v</code> or <code>-q</code>
+says otherwise; <code>-</code> for the standard output. The Logs window
+has the information, the warnings and the errors, whatever these options
+say.
 </dd>
 <dt><code>--logger</code> <em>name</em></dt>
 <dd>

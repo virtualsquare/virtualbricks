@@ -3,28 +3,13 @@
   <info>
     <link type="guide" xref="index#beyond"/>
     <link type="seealso" xref="programs"/>
-    <title type="sort">4</title>
+    <title type="sort">5</title>
     <desc>The messages, a brick that doesn't start, a refused start, a project that can't be read.</desc>
   </info>
   <title>When something goes wrong</title>
   <section id="logs">
     <title>The messages</title>
-    <p><guiseq><gui>File</gui><gui>Logs</gui></guiseq> opens the messages of the run: those of Virtualbricks, of its bricks, and what their programs print, on a grey band, with <sys>2&gt;</sys> before what a program writes on its standard error. The field at the top filters as you type (<keyseq><key>Ctrl</key><key>F</key></keyseq>):</p>
-    <terms>
-      <item>
-        <title><code>level:warning</code></title>
-        <p>The warnings and the errors, with what the programs wrote on their standard error.</p>
-      </item>
-      <item>
-        <title><code>source:tap1,vm1</code></title>
-        <p>The messages of those bricks; <code>source:qemu</code>, those of every virtual machine.</p>
-      </item>
-      <item>
-        <title>any other word</title>
-        <p>The messages that have it.</p>
-      </item>
-    </terms>
-    <p>The menu of the window has <gui>Save…</gui>, which writes every message to a file, whatever the filter, and <gui>Report a bug…</gui>, which opens a new email in your mail program, with the messages attached.</p>
+    <p><guiseq><gui>File</gui><gui>Logs</gui></guiseq> has the messages of the run: those of Virtualbricks, of its bricks, and what their programs print. <code>level:warning</code> in its filter keeps the warnings and the errors, with what the programs wrote on their standard error; <code>source:tap1</code> keeps the messages of the brick <sys>tap1</sys>. All about the window is in <link xref="logs"/>.</p>
   </section>
   <section id="start">
     <title>A brick doesn't start</title>
@@ -42,7 +27,7 @@
         <p>A warning sign in <gui>New Brick</gui>, or a message about a program: the program isn't installed; see <link xref="programs"/>.</p>
       </item>
       <item>
-        <p>Otherwise, filter the <gui>Logs</gui> window with the name of the brick: the program says why it stopped.</p>
+        <p>Otherwise, filter the <gui>Logs</gui> window with <code>source:</code> and the name of the brick, as <code>source:tap1</code>: its message <sys>Starting:</sys> has the command it runs, and the program says why it stopped.</p>
       </item>
     </list>
   </section>
@@ -69,6 +54,6 @@
   </section>
   <section id="report">
     <title>Reporting a problem</title>
-    <p>Tell us what broke at <link href="https://github.com/virtualsquare/virtualbricks/issues">github.com/virtualsquare/virtualbricks/issues</link>, and attach the messages: <gui>Save…</gui>, in the menu of the <gui>Logs</gui> window, writes them to a file.</p>
+    <p>Tell us what broke at <link href="https://github.com/virtualsquare/virtualbricks/issues">github.com/virtualsquare/virtualbricks/issues</link>, and attach the messages: <gui>Save…</gui>, in the menu of the <gui>Logs</gui> window, writes them to a file; see <link xref="logs#save"/>.</p>
   </section>
 </page>

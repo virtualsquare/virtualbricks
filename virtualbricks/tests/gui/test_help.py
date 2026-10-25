@@ -391,7 +391,7 @@ class TestTheNamedPages(HelpTestCase):
             ["AboutDialog"],
         )
         self.assertEqual(pages["SettingsWindow"], "settings")
-        self.assertEqual(pages["LoggingWindow"], "problems")
+        self.assertEqual(pages["LoggingWindow"], "logs")
         self.assertIsInstance(pages["MainWindow"], property)
 
     def test_every_tab(self):

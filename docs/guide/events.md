@@ -255,7 +255,7 @@ An action that fails doesn't stop the others: a brick that can't start, a
 console command with an error, a brick or an event that is no longer in the
 project. The **Logs** window says which one failed and why, as
 `Event lab, action 1, start vm1: …`{.sys}, and `source:lab`{.sys} in its filter
-keeps the messages of the event `lab`{.sys}; see [](problems#logs).
+keeps the messages of the event `lab`{.sys}; see [](logs#filter).
 
 A brick or an event renamed is renamed in the actions that start or stop it,
 but not in the console and shell commands, which keep the old name: change them
