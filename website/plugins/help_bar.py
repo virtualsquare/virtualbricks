@@ -13,40 +13,42 @@ import re
 
 from pelican import signals
 
-HELP = 'help'
+HELP = "help"
 # themes/overrides/help_bar.html
-TEMPLATE = 'help_bar'
+TEMPLATE = "help_bar"
 
 # the context of the site and the templates of the theme, from the generators
 site = {}
 
 
 def keep_site(generators):
-    site['context'] = generators[0].context
-    site['template'] = generators[0].get_template(TEMPLATE)
+    site["context"] = generators[0].context
+    site["template"] = generators[0].get_template(TEMPLATE)
 
 
 def add_bar(pelican):
     folder = os.path.join(pelican.output_path, HELP)
     for path, _, names in os.walk(folder):
         for name in names:
-            if name.endswith('.html'):
+            if name.endswith(".html"):
                 add_bar_to(os.path.join(path, name))
 
 
 def add_bar_to(path):
-    with open(path, encoding='utf-8') as file:
+    with open(path, encoding="utf-8") as file:
         page = file.read()
     if '<nav class="site' in page:
         return
     kind = re.search(r'<div class="page (\w+)">', page)
-    bar = site['template'].render(site['context'],
-                                  kind=kind.group(1) if kind else '')
-    style, nav = re.fullmatch(r'\s*(<style>.*?</style>)\s*(.*?)\s*', bar,
-                              re.DOTALL).groups()
-    page = page.replace('</head>', style + '\n</head>', 1)
-    page = page.replace('<body>\n', '<body>\n' + nav + '\n', 1)
-    with open(path, 'w', encoding='utf-8') as file:
+    bar = site["template"].render(
+        site["context"], kind=kind.group(1) if kind else ""
+    )
+    style, nav = re.fullmatch(
+        r"\s*(<style>.*?</style>)\s*(.*?)\s*", bar, re.DOTALL
+    ).groups()
+    page = page.replace("</head>", style + "\n</head>", 1)
+    page = page.replace("<body>\n", "<body>\n" + nav + "\n", 1)
+    with open(path, "w", encoding="utf-8") as file:
         file.write(page)
 
 
