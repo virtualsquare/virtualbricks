@@ -3786,6 +3786,18 @@ def link_lines(virtualbricks, item):
     virtualbricks.click("radio button", item)
 
 
+@when("I open the menu of the picture of the lab")
+def open_lab_menu(virtualbricks):
+    """
+    The tab Topology, then More, which stays open on its items: as the
+    picture of the guide shows it.
+    """
+
+    tab = virtualbricks.click("page tab", TOPOLOGY)
+    virtualbricks.click("toggle button", "More", within=tab)
+    virtualbricks.find("radio button", "By Hand")
+
+
 @then(words("the file {file} of my home folder is a PNG image, not blank"))
 def png_image(virtualbricks, file):
     """
@@ -4052,6 +4064,19 @@ def write_readme(virtualbricks, docstring):
         "the editor of the README shows",
     )
     virtualbricks.type(docstring, "text", within=editor)
+
+
+@when("I open the syntax of the README, in its editor")
+def open_readme_syntax(virtualbricks):
+    """
+    The tab Readme, its Edit, then Syntax, which stays open: as the picture
+    of the guide shows it.
+    """
+
+    tab = virtualbricks.click("page tab", README_TAB)
+    virtualbricks.click("radio button", "Edit", within=tab)
+    virtualbricks.click("toggle button", "Syntax", within=tab)
+    virtualbricks.find("label", "a line across")
 
 
 @when("I show the preview of the README")

@@ -210,6 +210,7 @@ The steps of the picture of the lab, in the tab Topology:
 | `When I export the picture of the lab to lab.png of my home folder, typing its path` | The tab Topology, More, then Export as Image…; in the file chooser, the path typed in Name in place of the name it suggests, then Save, and it closes |
 | `When I export the picture of the lab to faded.png of my home folder, typing its path, with Fade stopped bricks ticked` | The same, with the check box Fade stopped bricks of the file chooser ticked before Save, if it isn't |
 | `When I choose Right Angles for the links in the menu of the picture of the lab` | The tab Topology, More, then the item of Links, a radio button in the menu: Straight, Curved or Right Angles |
+| `When I open the menu of the picture of the lab` | The tab Topology, then More, which stays open on its items: as the picture of the guide shows it |
 | `Then the file lab.png of my home folder is a PNG image, not blank` | The file has the bytes of a PNG at its start, cairo reads it, and its pixels aren't all alike |
 | `Then the picture in lab.png of my home folder is in colour` | A hundred of its pixels at least have their red, green and blue 40 apart or more |
 | `Then the picture in faded.png of my home folder is grey` | Each of its pixels has its red, green and blue 12 apart at most: the ink of the links and the names is 8 apart |
@@ -226,6 +227,7 @@ The steps of the tab Readme:
 | `When I open the tab Readme` | Its page tab, in the main window, until it is the one that shows; any tab, as `the tab Bricks` |
 | `When I write the README in the Readme tab`, with a text under it | The tab Readme, its Edit, then the text typed in its editor |
 | `When I show the preview of the README` | The Preview of the tab Readme |
+| `When I open the syntax of the README, in its editor` | The tab Readme, its Edit, then Syntax, which stays open: as the picture of the guide shows it |
 | `Then the Readme tab shows the README rendered`, with a table under it | The runs of text of the preview, all of them and in order, a line at a time: the text of each, without the spaces at its ends, and its style, as AT-SPI tells it: `large`, `bold`, `italic`, `monospace`, or none |
 | `Then the README file of new_project has`, with a text under it | The file `README.md` of the folder of the project has the text, once Virtualbricks has written it, as it does when it saves the project |
 

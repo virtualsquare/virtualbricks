@@ -44,12 +44,39 @@ Feature: The pictures of the user guide
     And I open the settings of vm1, on its page Machine
     Then the picture machine-settings shows the main window
 
-  @needs-qemu-img
-  Scenario: The Images tab, with one image
+  @needs-qemu-img @needs-qemu-system-i386
+  Scenario: The Images tab: debian, which vm1 and vm2 use, vm1 running, and scratch, which no disk uses
     Given the empty disk image debian.qcow2 of 1 GB, in my home folder
+    And the files of my home folder were last changed on 2024-08-02
     And Virtualbricks is running
-    When I add an existing image, debian.qcow2 of my home folder, with the name it suggests, debian
+    When I add an existing image, debian.qcow2 of my home folder, used where it is, with the name it suggests, debian
+    And I add a new empty disk, scratch, of 20 MB in the format raw
+    And I open the tab Bricks
+    And I add the virtual machine vm1
+    And I add the virtual machine vm2
+    And I turn on "No display" in the settings of vm1, on its page Display
+    And I give vm1 the image debian, on its disk hda
+    And I give vm2 the image debian, on its disk hda
+    And I start vm1
+    And I open the tab Images
     Then the picture images shows the main window
+
+  @needs-qemu-img @needs-qemu-system-i386
+  Scenario: The details of debian, which vm1 and vm2 use, vm1 running
+    Given the empty disk image debian.qcow2 of 1 GB, in my home folder
+    And the files of my home folder were last changed on 2024-08-02
+    And Virtualbricks is running
+    When I add an existing image, debian.qcow2 of my home folder, used where it is, with the name it suggests, debian
+    And I add a new empty disk, scratch, of 20 MB in the format raw
+    And I open the tab Bricks
+    And I add the virtual machine vm1
+    And I add the virtual machine vm2
+    And I turn on "No display" in the settings of vm1, on its page Display
+    And I give vm1 the image debian, on its disk hda
+    And I give vm2 the image debian, on its disk hda
+    And I start vm1
+    And I open the details of debian
+    Then the picture image-details shows the main window
 
   Scenario: The settings of an event that starts sw1 after 5 seconds
     Given Virtualbricks is running
@@ -147,14 +174,83 @@ Feature: The pictures of the user guide
     And I open When It Starts, in the menu of tap1
     Then the picture when-it-starts shows the main window
 
-  @needs-qemu-system-i386
-  Scenario: The Topology tab: sw1, and vm1 plugged into it
-    Given Virtualbricks is running
-    When I add the switch sw1
-    And I add the virtual machine vm1
-    And I connect vm1 to sw1, with Connect To in its menu
+  @needs-qemu-system-i386 @needs-vde_switch
+  Scenario: The Topology tab: sw1 and sw2 running, joined by wire1, with tap1 and three machines
+    Given the project new_project has the project.toml
+      """
+      format = 1
+
+      [bricks.sw1]
+      type = "switch"
+
+      [bricks.sw2]
+      type = "switch"
+
+      [bricks.wire1]
+      type = "wire"
+      endpoints = ["sw1", "sw2"]
+
+      [bricks.tap1]
+      type = "tap"
+      connect = "sw1"
+
+      [bricks.vm1]
+      type = "qemu"
+      nics = [{kind = "plug", connect = "sw1", mac = "52:54:00:12:34:01"}]
+
+      [bricks.vm2]
+      type = "qemu"
+      nics = [{kind = "plug", connect = "sw2", mac = "52:54:00:12:34:02"}]
+
+      [bricks.vm3]
+      type = "qemu"
+      nics = [{kind = "plug", connect = "sw2", mac = "52:54:00:12:34:03"}]
+      """
+    And Virtualbricks is running
+    When I open the tab Bricks
+    And I start sw1
+    And I start sw2
     And I open the tab Topology
     Then the picture topology shows the main window
+
+  @needs-qemu-system-i386 @needs-vde_switch
+  Scenario: The menu of the picture of the lab, open
+    Given the project new_project has the project.toml
+      """
+      format = 1
+
+      [bricks.sw1]
+      type = "switch"
+
+      [bricks.sw2]
+      type = "switch"
+
+      [bricks.wire1]
+      type = "wire"
+      endpoints = ["sw1", "sw2"]
+
+      [bricks.tap1]
+      type = "tap"
+      connect = "sw1"
+
+      [bricks.vm1]
+      type = "qemu"
+      nics = [{kind = "plug", connect = "sw1", mac = "52:54:00:12:34:01"}]
+
+      [bricks.vm2]
+      type = "qemu"
+      nics = [{kind = "plug", connect = "sw2", mac = "52:54:00:12:34:02"}]
+
+      [bricks.vm3]
+      type = "qemu"
+      nics = [{kind = "plug", connect = "sw2", mac = "52:54:00:12:34:03"}]
+      """
+    And Virtualbricks is running
+    When I open the tab Bricks
+    And I start sw1
+    And I start sw2
+    And I open the menu of the picture of the lab
+    Then the picture topology-menu shows the main window
 
   Scenario: The Readme tab, with a heading, a list and a link
     Given the project new_project has the README
@@ -171,6 +267,22 @@ Feature: The pictures of the user guide
     And Virtualbricks is running
     When I open the tab Readme
     Then the picture readme shows the main window
+
+  Scenario: The editor of the Readme tab, with its syntax open
+    Given the project new_project has the README
+      """
+      # A lab of two machines
+
+      Two machines on **one switch**, to try the *network* between them.
+
+      - vm1: 10.0.0.1
+      - vm2: 10.0.0.2
+
+      The images are those of [Debian](https://www.debian.org/).
+      """
+    And Virtualbricks is running
+    When I open the syntax of the README, in its editor
+    Then the picture readme-edit shows the main window
 
   Scenario: The Projects window, with two projects
     Given Virtualbricks is running

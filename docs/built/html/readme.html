@@ -14,72 +14,274 @@
 href="index.html#lab">Your lab</a></p>
 </div>
 <h1>The README of a project</h1>
-<p>Each project has a README, the file <code
-class="file">README.md</code> of its folder: what the lab is for, its
-addresses, how to use it. The <span class="gui">Readme</span> tab shows
-it rendered. The Projects window shows it too, and the Import window its
-first paragraph.</p>
+<p>Each project has a README: what the lab is for, its addresses, its
+users and their passwords, how to use it. It is the file <code
+class="file">README.md</code> of the folder of the project, plain text
+that you can write in the <span class="gui">Readme</span> tab or in any
+editor, and what looks like Markdown in it shows rendered.</p>
+<p>The <span class="gui">Readme</span> tab shows it rendered, with its
+pictures; the Projects window and the Import window show parts of it,
+see <a href="readme.html#where">Where the README shows</a>. An exported
+archive always holds it. A project of an older Virtualbricks has <code
+class="file">README</code>, which becomes <code
+class="file">README.md</code> when it opens.</p>
 <figure>
 <a href="figures/readme.png"><img src="figures/readme.png"
-alt="The Readme tab: the README rendered, with a heading, a paragraph, a list and a link; Edit over the top right corner." /></a>
+alt="The Readme tab: the README rendered, with a heading, a paragraph, a list and a link; the pencil over the top right corner." /></a>
 <figcaption>The Readme tab</figcaption>
 </figure>
-<p>A button floats over the top right corner of the tab, faded until you
-point at it: <span class="gui">Edit</span> opens the text. While you
-write, it gives way to <span class="gui">Preview</span>, which goes back
-to the rendered README, and <span class="gui">Syntax</span>, which shows
-what the text can hold. The README is saved 30 seconds after your last
-change, and when you leave the tab.</p>
+<h2 id="edit">Writing the README</h2>
+<p>The buttons over the top right corner of the tab are faded until you
+point at them. Over the README rendered, the pencil, <span
+class="gui">Edit</span>, opens its text. While you write, the eye, <span
+class="gui">Preview</span>, goes back to the README rendered, and the
+question mark, <span class="gui">Syntax</span>, shows what the text can
+hold. A project without a README says so, and the pencil writes one.</p>
+<figure>
+<a href="figures/readme-edit.png"><img src="figures/readme-edit.png"
+alt="The Readme tab with the text of the README in the editor, and the eye and the question mark over the top right corner; the syntax open under the question mark: a heading, emphasis, code, a list, a quote, a link, a picture and a line across, and what each is." /></a>
+<figcaption>Writing the README</figcaption>
+</figure>
+<p>The editor is plain text, without colours. The README is saved at
+most 30 seconds after a change, and when you leave the tab, when the
+project is saved, and when you quit. The tab reads the file again each
+time it shows: a README changed in another editor shows when you come
+back to the tab.</p>
+<h2 id="syntax">The syntax</h2>
+<p>The syntax is CommonMark, the Markdown that GitHub, GitLab and most
+editors share, but for what <a href="readme.html#limits">What it doesn't
+do</a> lists. The file stays as you wrote it: the marks show rendered
+only where the README is read.</p>
 <div class="terms">
-<p class="title">The syntax</p>
+<p class="title">Blocks</p>
 <dl>
 <dt><code># Title</code></dt>
 <dd>
-<p>A heading; <code>##</code> for a smaller one.</p>
+<p>A heading, bold: <code>#</code> and a space before its text,
+<code>##</code> for a smaller one, and <code>###</code> to
+<code>######</code> for the smallest, all of one size. A line of
+<code>===</code> under a line of text makes it a heading of the largest
+size, and a line of <code>---</code> one of the next.</p>
 </dd>
-<dt><code>*emphasis*</code>, <code>**strong**</code>,
-<code>~~struck~~</code></dt>
+<dt>A paragraph</dt>
 <dd>
-<p>Emphasis, strong and struck text.</p>
-</dd>
-<dt><code>`code`</code></dt>
-<dd>
-<p>Code; <code>```</code> above and below a block of it.</p>
+<p>Lines of text, with an empty line before the next block. A new line
+in a paragraph stays a new line, where most Markdown programs join the
+lines into one: a README written as plain text keeps its lines.</p>
 </dd>
 <dt><code>- item</code></dt>
 <dd>
-<p>A list; <code>1.</code> for a numbered one.</p>
+<p>A list, with a bullet before each item; <code>*</code> and
+<code>+</code> too. An item can hold paragraphs, code and other lists:
+indent them under its text, by two spaces after <code>-</code>.</p>
+</dd>
+<dt><code>1. item</code></dt>
+<dd>
+<p>A numbered list, <code>1)</code> too. It counts from its first
+number, whatever the numbers after it: <code>3.</code>, then
+<code>3.</code> again, is 3 and 4. Indent by three spaces after
+<code>1.</code>.</p>
 </dd>
 <dt><code>&gt; quote</code></dt>
 <dd>
-<p>A quote.</p>
+<p>A quote, in fainter text, indented. <code>&gt;&gt;</code> is a quote
+in a quote, and a quote can hold lists and code.</p>
 </dd>
-<dt><code>[text](https://example.org)</code></dt>
+<dt><code>```</code></dt>
 <dd>
-<p>A link, which opens in your browser; a bare URL is one too.</p>
-</dd>
-<dt><code>![The lab](topology.png)</code></dt>
-<dd>
-<p>A picture: a file of the folder of the project, of at most 10 MB.</p>
+<p>A line of three backquotes above a block of code, and another below
+it; or three tildes, <code>~~~</code>. The block shows in a monospace
+font, on a tinted background, with its spaces, and nothing in it is read
+as a mark. A word after the first backquotes, as <code>sh</code>, is
+left out. A block without its closing line runs to the end of the
+README.</p>
 </dd>
 <dt><code>---</code></dt>
 <dd>
-A line across.
+A line across, alone on its line, with an empty line above it;
+<code>***</code> and <code>___</code> too.
 </dd>
 </dl>
 </div>
-<p>Anything else shows as you typed it. A new line in a paragraph stays
-a new line, so a README written as plain text keeps its lines.</p>
+<div class="terms">
+<p class="title">Within a line</p>
+<dl>
+<dt><code>*emphasis*</code>, <code>_emphasis_</code></dt>
+<dd>
+<p>Italics. A <code>_</code> inside a word, as in <code>vm1_hda</code>,
+stays a <code>_</code>.</p>
+</dd>
+<dt><code>**strong**</code>, <code>__strong__</code></dt>
+<dd>
+<p>Bold; <code>***both***</code> is bold and italic.</p>
+</dd>
+<dt><code>~~struck~~</code></dt>
+<dd>
+<p>Struck through, with two tildes on each side.</p>
+</dd>
+<dt><code>`code`</code></dt>
+<dd>
+<p>A monospace font, on a tinted background, with no mark read inside.
+Two backquotes around a code that holds one:
+<code>`` a ` b ``</code>.</p>
+</dd>
+<dt><code>[text](https://example.org)</code></dt>
+<dd>
+<p>A link; see <a href="readme.html#links">Links</a>.</p>
+</dd>
+<dt><code>![text](picture.png)</code></dt>
+<dd>
+<p>A picture of the folder of the project; see <a
+href="readme.html#pictures">Pictures</a>.</p>
+</dd>
+<dt><code>\*</code></dt>
+<dd>
+<p>A backslash shows the mark after it as it is, as <code>\*</code>,
+<code>\_</code>, <code>\#</code> or <code>\`</code>.</p>
+</dd>
+<dt><code>&amp;copy;</code></dt>
+<dd>
+An entity of HTML is its character: <code>&amp;copy;</code> is ©,
+<code>&amp;amp;</code> is &amp;, <code>&amp;nbsp;</code> a space that
+never breaks.
+</dd>
+</dl>
+</div>
+<h2 id="links">Links</h2>
+<p>A click on a link opens it: an <code>http</code> or
+<code>https</code> link in your browser, and a <code>mailto</code> link
+in your mail client. The pointer turns into a hand over a link. Other
+links show, but don't open, as a link to a file of the project,
+<code>[notes](notes.md)</code>, or an <code>ftp</code> link; and
+<code>file:</code> and <code>javascript:</code> links aren't links at
+all, but text as you typed it.</p>
+<dl>
+<dt><code>[text](https://example.org)</code></dt>
+<dd>
+<p>The text is the link, and it can hold emphasis and code. A URL with
+spaces goes between <code>&lt;</code> and <code>&gt;</code>, or with
+<code>%20</code> for each space.</p>
+</dd>
+<dt><code>&lt;https://example.org&gt;</code>,
+<code>&lt;alice@example.org&gt;</code></dt>
+<dd>
+<p>The URL is the link; an e-mail address is a <code>mailto</code>
+link.</p>
+</dd>
+<dt><code>https://example.org</code></dt>
+<dd>
+<p>A URL that starts with <code>http://</code> or <code>https://</code>
+is a link as it is, outside code. It ends before the punctuation that
+ends a sentence, a <code>.</code>, a <code>,</code> or a <code>)</code>:
+write a URL that ends with <code>)</code> between <code>&lt;</code> and
+<code>&gt;</code>. A <code>www.example.org</code> without its
+<code>https://</code>, or an e-mail address alone, stays text.</p>
+</dd>
+</dl>
+<h2 id="pictures">Pictures</h2>
+<p>A picture is a file of the folder of the project, or of a folder in
+it, and the README names it by its path from there, as <code
+class="file">topology.png</code> or <code
+class="file">pictures/router.jpg</code>; <code>%20</code> in the path is
+a space. The text in brackets says what it shows. The Readme tab shows
+the text, in italics, until the picture comes; then the picture as wide
+as it is, or narrower to fit, and the first frame of an animation. Any
+kind of picture that GTK reads will do: PNG, JPEG, GIF, SVG and
+others.</p>
+<p>A picture that can't show stays its text, or its path when the
+brackets are empty:</p>
+<ul>
+<li><p>a file outside the folder of the project: by a path from
+<code>/</code>, by <code>..</code> out of it, or through a link out of
+it;</p></li>
+<li><p>a picture on the web: Virtualbricks never fetches one;</p></li>
+<li><p>a file larger than 10 MB, or a picture of more than 32 million
+pixels;</p></li>
+<li><p>a file that isn't a picture, or that isn't there.</p></li>
+</ul>
+<p>To show the picture of the lab:</p>
+<ol type="1">
+<li><p>In the <span class="gui">Topology</span> tab, choose <span
+class="gui">Export as Image…</span> in the menu of the bar, and save the
+picture in the folder of the project, as the chooser suggests: <code
+class="file">new_project.png</code>.</p></li>
+<li><p>In the README, write
+<code>![The lab](new_project.png)</code>.</p></li>
+</ol>
+<p>The pictures go into the exported archives with the other files of
+the folder of the project, so the README shows them on the other
+computer too; see <a href="archives.html#export">Exporting a
+project</a>.</p>
+<h2 id="limits">What it doesn't do</h2>
+<p>These show as you typed them, marks and all:</p>
+<ul>
+<li><p>a table, with its <code>|</code>: put it in a block of code,
+whose monospace font keeps its columns;</p></li>
+<li><p>HTML, as <code>&lt;b&gt;</code> or
+<code>&lt;br&gt;</code>;</p></li>
+<li><p>a link by reference, <code>[text][name]</code>, with
+<code>[name]: https://…</code> on a line of its own, and a footnote,
+<code>[^1]</code>;</p></li>
+<li><p>a task, <code>- [ ] todo</code>, which shows <code>[ ]</code>
+after the bullet;</p></li>
+<li><p>an emoji by its name, as <code>:smile:</code>; type the emoji
+itself instead.</p></li>
+</ul>
+<p>Also:</p>
+<ul>
+<li><p>A line indented by four spaces is a line of a paragraph, without
+its spaces, not code: put code between lines of backquotes.</p></li>
+<li><p>A block of code has no colours, whatever its language.</p></li>
+<li><p>The title of a link or of a picture,
+<code>[text](https://example.org "Title")</code>, is left out.</p></li>
+<li><p>The headings below <code>##</code> are all of one size.</p></li>
+</ul>
+<h2 id="where">Where the README shows</h2>
+<dl>
+<dt><span class="gui">The Readme tab</span></dt>
+<dd>
+<p>The whole README, with its pictures. Its text can be selected and
+copied.</p>
+</dd>
+<dt><span class="gui">The Projects window</span></dt>
+<dd>
+<p>The row of each project shows the first line of its README that has
+text, without its marks: its title, often. Beside the list, the README
+of the selected project shows whole, each picture as its text.</p>
+</dd>
+<dt><span class="gui">The Import window</span></dt>
+<dd>
+<p>The first paragraph of the README of the archive, the first that
+isn't a heading, in four lines at most, with <code>…</code> when it goes
+on.</p>
+</dd>
+<dt><code class="cmd">project list</code></dt>
+<dd>
+<p>The console lists each project with the first line of its README, as
+it is typed, without the <code>#</code> of a title; see <a
+href="console.html">The console and scripts</a>.</p>
+</dd>
+</dl>
+<p>In the windows of another computer (see <a href="remote.html">Another
+computer</a>), the README is that of the lab machine, and so are its
+pictures. A README of 64 KiB or more can't go through the connection:
+write it on the lab machine.</p>
 <section id="seealso" class="seealso">
 <h2>See also</h2>
 <div class="links">
 <div class="link">
-<p><a href="topology.html#export">Layout and export</a></p>
+<p><a href="topology.html#export">Exporting the picture</a></p>
+</div>
+<div class="link">
+<p><a href="projects.html">Projects</a></p>
+<div class="desc">
+<p>Open, make, rename, copy and remove the projects of a workspace.</p>
+</div>
 </div>
 <div class="link">
 <p><a href="topology.html">The picture of the lab</a></p>
 <div class="desc">
-<p>See how the bricks connect, and export the picture.</p>
+<p>See how the bricks connect, arrange them, and export the picture.</p>
 </div>
 </div>
 </div>

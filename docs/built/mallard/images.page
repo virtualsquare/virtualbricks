@@ -7,55 +7,111 @@
     <desc>Add, make, share and find the disk images of a project.</desc>
   </info>
   <title>Disk images</title>
-  <p>A disk image is a file that holds the disk of a virtual machine, as <file>debian.qcow2</file>. The <gui>Images</gui> tab has a row for each image of the project: its format, the size of the disk that the machine sees, the space that the file takes, and which disks use it, on a private copy or the image itself. Its state is <gui>In use</gui> while a machine that reads it runs or starts.</p>
-  <figure>
+  <p>A disk image is a file that holds the disk of a virtual machine, as <file>debian.qcow2</file>: the system it boots, or an empty disk to install one on. The images are part of the project, by name, and each disk of a machine chooses one of them. Several machines can share an image, each on a private copy of its own; see <link xref="machines#disks"/>.</p>
+  <terms>
+    <title>The states</title>
+    <item>
+      <title><gui>In use</gui></title>
+      <p>A machine that uses the image runs, or starts. The tooltip of the state says which.</p>
+    </item>
+    <item>
+      <title><gui>Not in use</gui></title>
+      <p>Disks use the image, but their machines are stopped.</p>
+    </item>
+    <item>
+      <title><gui>No disk</gui></title>
+      <p>No disk of the project uses the image.</p>
+    </item>
+    <item>
+      <title><gui>File missing</gui></title>
+      <p>The file of the image isn't where the project says; the machines that use it can't start until you find it. See <link xref="images#missing"/>.</p>
+    </item>
+  </terms>
+  <section id="tab">
     <title>The Images tab</title>
-    <media type="image" mime="image/png" src="figures/images.png">
-      <p>The Images tab with the image debian: qcow2, a disk of 1.0 GB, the space that its file takes, and no disk uses it.</p>
-    </media>
-  </figure>
+    <p>The <gui>Images</gui> tab has a row for each image: its name; what <cmd>qemu-img</cmd> says of its file, its format, the size of the disk that the machine sees and the space that the file takes; which machines use it, on a private copy or the image itself; and its state.</p>
+    <figure>
+      <title>The Images tab</title>
+      <media type="image" mime="image/png" src="figures/images.png">
+        <p>The Images tab with two images: debian, qcow2, a disk of 1.0 GB, which vm1 and vm2 use on private copies, In use; and scratch, raw, a disk of 20.0 MB, which no disk uses.</p>
+      </media>
+    </figure>
+    <p>Above the list, <gui>Add Image</gui> adds an image, and the search field finds one by name: press <keyseq><key>Ctrl</key><key>F</key></keyseq>, or start typing in the list. <gui>All</gui> and <gui>In use</gui> switch between all the images and only those in use. The sizes are in KB, MB and GB of 1000 bytes.</p>
+  </section>
   <section id="add">
     <title>Adding an image</title>
-    <p><gui>Add Image</gui> offers two ways:</p>
+    <p><gui>Add Image</gui> offers two ways. The same two are in the list of images of each disk of a machine, which then uses the image added.</p>
     <terms>
       <item>
         <title><gui>Existing Image…</gui></title>
-        <p>A file you have. Virtualbricks reads it with <cmd>qemu-img</cmd> and copies it to the shared images of the workspace, unless you choose <gui>Use it where it is</gui>.</p>
+        <p>A file you have, as one you downloaded. Choose it: <cmd>qemu-img</cmd> reads it, and the dialog says what it is, or that it isn't a disk image. The <gui>Name</gui> starts from the name of the file. A file outside the workspace is copied to the shared images, unless you choose <gui>Use it where it is</gui>: the file you chose stays as it is, and the copy takes only the space of its data. A file above another, a backing file, is always used where it is. The <gui>Description</gui> starts from a file beside it with <code>.md</code> after its name, as <file>debian.qcow2.md</file>, if there's one.</p>
       </item>
       <item>
         <title><gui>New Empty Disk…</gui></title>
-        <p>A new file, of the <gui>Size</gui> and <gui>Format</gui> you choose, qcow2 or raw, in a <gui>Folder</gui>.</p>
+        <p>A new file, of the <gui>Size</gui> you choose, 10 GB at first, and of the <gui>Format</gui> you choose: qcow2, which grows as the machine writes, or raw. It goes in the shared images, or in another <gui>Folder</gui>, with the name of the image and the extension of its format, as <file>scratch.raw</file>.</p>
       </item>
     </terms>
-    <p>The same two are in the list of images of each disk of a machine.</p>
   </section>
   <section id="shared">
     <title>The shared images</title>
-    <p>Each workspace has a folder of images that its projects share, <file>shared_images</file>. An image there can be used by several projects, and by several machines of each, each machine on a private copy of its own.</p>
+    <p>Each workspace has a folder of images that its projects share, <file>shared_images</file>. An image there can be used by several projects, and by several machines of each, each machine on a private copy of its own. The import of an archive copies its images there too, and a project removed leaves them.</p>
+    <p>A file used where it is stays where it was: the project keeps its path. Keep it there, or the image becomes <gui>File missing</gui>.</p>
+  </section>
+  <section id="details">
+    <title>The details of an image</title>
+    <p>Double-click a row, or select it and press <key>Enter</key>: the details of the image show in place of the list, as the settings of a brick. You can change its <gui>Name</gui>, which follows into the disks that use it, and its <gui>Description</gui>; <gui>OK</gui> saves them, and is greyed while the name can't be the image's, with the reason under it.</p>
+    <figure>
+      <title>The details of an image</title>
+      <media type="image" mime="image/png" src="figures/image-details.png">
+        <p>The details of debian: Name and Description, then File, ~/debian.qcow2; Format, qcow2; Size, a disk of 1.0 GB and the space on disk; Changed, the day and the time; then Used by: vm1, hda, its private copy and its size, Running; and vm2, hda, a private copy made at the next start, Stopped.</p>
+      </media>
+    </figure>
+    <p>Under them, what <cmd>qemu-img</cmd> says of the file: where it is, its format and the file it is above, if any, its sizes, its snapshots and when it last changed. Then <gui>Used by</gui>, a line for each disk: its machine, its device, as <code>hda</code>, how it uses the image, a private copy and its size, or the image itself, and whether its machine runs. Last, the other projects of the workspace that use the same file, and under which name.</p>
   </section>
   <section id="menu">
     <title>The menu of an image</title>
+    <p>The button at the end of the row, the right button of the mouse and the <key>Menu</key> key open the menu:</p>
     <terms>
       <item>
+        <title><gui>Find the File…</gui></title>
+        <p>Only for an image whose file is missing; see <link xref="images#missing"/>.</p>
+      </item>
+      <item>
         <title><gui>Details…</gui></title>
-        <p>The name and the description, which you can change, then what <cmd>qemu-img</cmd> says of the file, each disk that uses it, and the other projects that use the same file.</p>
+        <p>As a double click, or <key>Enter</key>.</p>
       </item>
       <item>
         <title><gui>Rename…</gui></title>
-        <p>A new name, in the disks that use it too.</p>
+        <p>A new name, in the disks that use it too; <key>F2</key> in the list.</p>
       </item>
       <item>
         <title><gui>Show in Files</gui></title>
-        <p>The file, in the file manager.</p>
+        <p>The folder of the file, in the file manager.</p>
       </item>
       <item>
         <title><gui>Remove…</gui></title>
-        <p>The image leaves the project. The dialog says which disks lose their image, and offers to move the file to the trash only when it is in the shared images and no other project uses it.</p>
-      </item>
-      <item>
-        <title><gui>Find the File…</gui></title>
-        <p>For an image whose file is missing, as one left unset at the import of an archive: choose where it is now. The private copies made on it follow it.</p>
+        <p>The image leaves the project; <key>Delete</key> in the list.</p>
       </item>
     </terms>
+  </section>
+  <section id="remove">
+    <title>Removing an image</title>
+    <p><gui>Remove…</gui> asks first, and says which disks will have no image: their machines start without them until you choose another. The private copies stay in the folder of the project, with the changes of their machines.</p>
+    <p>The file stays too, unless it is in the shared images and no other project uses it: then the dialog offers to move it to the trash, with the space it takes, or, on a computer without a trash, to delete it for good. A file that another project uses always stays, and the dialog says which project.</p>
+  </section>
+  <section id="missing">
+    <title>A missing file</title>
+    <p>An image whose file is gone, moved, or left unset at the import of an archive, is <gui>File missing</gui>, and its row says where the file was. Its menu starts with <gui>Find the File…</gui>: choose the file where it is now. When the shared images have a file of the same name, the dialog offers it first. The private copies of its disks are pointed at the new file before the image, so that they keep their changes: choose the same disk, or a copy of it, since they hold changes to it.</p>
+  </section>
+  <section id="console">
+    <title>From the console</title>
+    <p>The <cmd>image</cmd> commands of the console do the same, but for the copy and the new empty disk:</p>
+    <screen>image add debian ~/images/debian.qcow2 description="Debian 13"
+image list
+image show debian
+image rename debian debian13
+image delete debian13</screen>
+    <p><cmd>image add</cmd> uses the file where it is, and <cmd>image delete</cmd> leaves the file and the private copies. Every command is in <link xref="command-line">virtualbricks(1)</link>.</p>
+    <p>In the windows of another computer (see <link xref="remote"/>), the files are those of the lab machine: you type the path of an existing image, with the completion of its folders, and it is used where it is; <gui>Show in Files</gui> is greyed.</p>
   </section>
 </page>
