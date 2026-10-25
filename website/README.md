@@ -22,15 +22,15 @@ this folder, but for those that say otherwise.
 
 ## Build the site
 
-Pelican 4.12 needs Python 3.11 or newer. `requirements.txt` has what the
-commands need, as does the `website` dependency group of `pyproject.toml`.
+Pelican 4.12 needs Python 3.11 or newer. The `website` dependency group of
+`pyproject.toml`, at the top, has what the commands need.
 The theme is a submodule: after a clone, fetch it.
 
 ```sh
 git submodule update --init
-pip install -r requirements.txt   # or, at the top, pip install --group website
-make html                         # the site, in output/
-make devserver PORT=8000          # and serve it at http://localhost:8000
+pip install --group ../pyproject.toml:website
+make html                       # the site, in output/
+make devserver PORT=8000        # and serve it at http://localhost:8000
 ```
 
 `make devserver` builds the site again when a page, a news or the settings
@@ -109,7 +109,7 @@ pipeline: `make github` does, and the whole site goes each time, the guide
 with its pages and news.
 
 `make github` pushes to a remote called **virtualsquare**, so the clone needs
-one, with the right to push to it, and ghp-import, of `requirements.txt`:
+one, with the right to push to it, and ghp-import, of the `website` group:
 
 ```sh
 git remote add virtualsquare git@github.com:virtualsquare/virtualbricks.git
