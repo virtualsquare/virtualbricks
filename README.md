@@ -66,7 +66,9 @@ These are optional:
 - `yelp`, to read the user guide, *Help › Contents* or F1 in a window; without
   it the guide opens in your browser;
 - an askpass helper for `sudo`, as `ssh-askpass`, to type the password of root
-  in a window (see [Configuration](#configuration)).
+  in a window (see [Configuration](#configuration));
+- a font of colour emoji, as `fonts-noto-color-emoji`, for the emoji of a
+  README, `:smile:`; without one they show as boxes.
 
 ## Installing
 

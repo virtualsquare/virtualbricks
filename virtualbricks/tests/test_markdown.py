@@ -22,7 +22,9 @@ paths of its pictures.
 
 from twisted.trial import unittest
 
+from virtualbricks.emoji import NAMES
 from virtualbricks.markdown import (
+    EMOJI_NAME,
     first_line,
     first_paragraph,
     parse,
@@ -227,6 +229,56 @@ class TestSyntax(unittest.TestCase):
             [("text", "vm1_hda and vm2_hdb")],
         )
 
+    def test_emoji(self):
+        text = (
+            ":tada: Done :+1:, (:rocket:)\n"
+            ":white_check_mark::warning: [a :bug:](https://a.org/:bug:)"
+        )
+        self.assertEqual(
+            [plain_text(children) for children in inlines(text)],
+            [
+                "\U0001f389 Done \U0001f44d, (\U0001f680)\n\u2705\u26a0\ufe0f a \U0001f41b"
+            ],
+        )
+        self.assertEqual(
+            links(text), [("https://a.org/:bug:", "a \U0001f41b")]
+        )
+        # in a heading, an emphasis and a table too
+        self.assertEqual(
+            [
+                plain_text(children)
+                for children in inlines("# :fire:\n\n*:x:*\n\n| :ok: |\n|---|")
+            ],
+            ["\U0001f525", "\u274c", "\U0001f197"],
+        )
+
+    def test_emoji_names_that_stay_text(self):
+        for text in (
+            # addresses, where :ab: :a: :b: :100: are names
+            "52:54:00:ab:cd:ef",
+            "fd00:a:b::100:1",
+            "at 10:30:45",
+            # stuck to a word
+            "word:smile: and :smile:word",
+            # not a name, or a row with one that isn't
+            ":nope: :tada::nope: :Smile:",
+            # escaped
+            "\\:smile:",
+        ):
+            [children] = inlines(text)
+            self.assertNotIn("\U0001f604", plain_text(children), text)
+            self.assertEqual(plain_text(children), text.replace("\\:", ":"))
+        [children] = inlines("`:smile:`")
+        self.assertEqual(children[0].content, ":smile:")
+        [fence] = [t for t in parse("```\n:smile:\n```") if t.type == "fence"]
+        self.assertEqual(fence.content, ":smile:\n")
+
+    def test_every_emoji_name_can_be_written(self):
+        self.assertGreater(len(NAMES), 1800)
+        self.assertEqual(NAMES["smile"], "\U0001f604")
+        for name in NAMES:
+            self.assertTrue(EMOJI_NAME.fullmatch(f":{name}:"), name)
+
 
 class TestFirstLine(unittest.TestCase):
 
@@ -260,6 +312,11 @@ class TestFirstLine(unittest.TestCase):
         # the first row with text
         self.assertEqual(
             first_line("| | |\n|---|---|\n| | |\n| r1 | `a` |"), "r1 | a"
+        )
+
+    def test_emoji(self):
+        self.assertEqual(
+            first_line("# :tada: OSPF lab"), "\U0001f389 OSPF lab"
         )
 
     def test_a_readme_written_as_plain_text(self):

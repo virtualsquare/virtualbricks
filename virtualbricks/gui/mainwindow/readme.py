@@ -64,6 +64,7 @@ SAVE_AFTER = 30
 SYNTAX = (
     ("# Heading", _("a heading; ## for a smaller one")),
     ("*italic* **bold**", _("emphasis; ~~struck~~")),
+    (":smile:", _("an emoji, by its name on GitHub")),
     ("`code`", _("code; ``` above and below a block")),
     ("- item", _("a list; 1. for a numbered one")),
     ("> quote", _("a quote")),

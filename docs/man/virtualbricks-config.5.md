@@ -389,6 +389,12 @@ part that most editors and forges share, with the tables of GitHub:
 **\*italic\***, **\*\*bold\*\***, **\~\~struck\~\~**
 :   Emphasis.
 
+**:smile:**
+:   An emoji, by the name that GitHub gives it, as **:+1:** or
+    **:warning:**. A name next to a letter, a digit or another **:**
+    stays text, as **:ab:** in the MAC address **52:54:00:ab:cd:ef**;
+    names in a row, **:tada::rocket:**, are emoji, all of them or none.
+
 **\`code\`**
 :   Code. A line of three backquotes, **\`\`\`**, above and below some
     lines makes a block of code.

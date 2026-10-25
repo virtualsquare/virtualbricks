@@ -347,6 +347,11 @@
 
 # DONE
 
+- [x] Show the emoji of a README by their names on GitHub, `:smile:`:
+  GitHub's names from gemoji in virtualbricks/emoji.py, written by
+  tools/gemoji.py; a name stuck to a letter, a digit or a colon stays
+  text, as in a MAC address; fonts-noto-color-emoji recommended (page 5,
+  Since then)
 - [x] Render GFM's tables in the README: the columns line up by tab stops
   measured from the cells, aligned as the line under the header says, a
   rule under the header; a row doesn't wrap, the Readme tab scrolls to a

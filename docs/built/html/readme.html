@@ -39,7 +39,7 @@ question mark, <span class="gui">Syntax</span>, shows what the text can
 hold. A project without a README says so, and the pencil writes one.</p>
 <figure>
 <a href="figures/readme-edit.png"><img src="figures/readme-edit.png"
-alt="The Readme tab with the text of the README in the editor, and the eye and the question mark over the top right corner; the syntax open under the question mark: a heading, emphasis, code, a list, a quote, a table, a link, a picture and a line across, and what each is." /></a>
+alt="The Readme tab with the text of the README in the editor, and the eye and the question mark over the top right corner; the syntax open under the question mark: a heading, emphasis, an emoji, code, a list, a quote, a table, a link, a picture and a line across, and what each is." /></a>
 <figcaption>Writing the README</figcaption>
 </figure>
 <p>The editor is plain text, without colours. The README is saved at
@@ -124,6 +124,18 @@ stays a <code>_</code>.</p>
 <dt><code>~~struck~~</code></dt>
 <dd>
 <p>Struck through, with two tildes on each side.</p>
+</dd>
+<dt><code>:smile:</code></dt>
+<dd>
+<p>An emoji, by the name that GitHub gives it: <code>:smile:</code> is
+😄, <code>:+1:</code> 👍, <code>:warning:</code> ⚠️,
+<code>:penguin:</code> 🐧. A name stuck to a letter, a digit or a
+<code>:</code> stays text, so that <code>:ab:</code> and
+<code>:cd:</code> in the address <code>52:54:00:ab:cd:ef</code> stay as
+they are; but names in a row, <code>:tada::rocket:</code>, are emoji,
+all of them or none. <code>\:smile:</code> and <code>`:smile:`</code>
+stay text too. The emoji show in colour with a font of colour emoji, as
+Noto Color Emoji; without one, as boxes.</p>
 </dd>
 <dt><code>`code`</code></dt>
 <dd>
@@ -247,9 +259,7 @@ project</a>.</p>
 <code>[name]: https://…</code> on a line of its own, and a footnote,
 <code>[^1]</code>;</p></li>
 <li><p>a task, <code>- [ ] todo</code>, which shows <code>[ ]</code>
-after the bullet;</p></li>
-<li><p>an emoji by its name, as <code>:smile:</code>; type the emoji
-itself instead.</p></li>
+after the bullet.</p></li>
 </ul>
 <p>Also:</p>
 <ul>

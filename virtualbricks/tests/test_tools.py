@@ -1441,3 +1441,75 @@ class TestToxVersions(unittest.TestCase):
             self.assertEqual(
                 pins, {name: versions.get(name) for name in pins}, target
             )
+
+
+class TestGemoji(unittest.TestCase):
+    """The names of the emoji of GitHub, from db/emoji.json of gemoji."""
+
+    ENTRIES = [
+        {"emoji": "\U0001f604", "aliases": ["smile"]},
+        {"emoji": "\U0001f44d", "aliases": ["+1", "thumbsup"]},
+        {"emoji": "\U0001f9d1\u200d\U0001f4bb", "aliases": ["technologist"]},
+    ]
+
+    def setUp(self):
+        self.tool = load("gemoji")
+        self.folder = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.folder)
+
+    def names(self, source):
+        namespace = {}
+        exec(compile(source, "emoji.py", "exec"), namespace)
+        return namespace["NAMES"]
+
+    def test_names(self):
+        self.assertEqual(
+            self.tool.names(self.ENTRIES),
+            {
+                "smile": "\U0001f604",
+                "+1": "\U0001f44d",
+                "thumbsup": "\U0001f44d",
+                "technologist": "\U0001f9d1\u200d\U0001f4bb",
+            },
+        )
+
+    def test_module(self):
+        names = self.tool.names(self.ENTRIES)
+        source = self.tool.module(names)
+        self.assertEqual(self.names(source), names)
+        # sorted, and the joiner, which doesn't show, as an escape
+        lines = [
+            line for line in source.splitlines() if line.startswith("    ")
+        ]
+        self.assertEqual(
+            lines,
+            [
+                '    "+1": "\U0001f44d",',
+                '    "smile": "\U0001f604",',
+                '    "technologist": "\U0001f9d1\\u200d\U0001f4bb",',
+                '    "thumbsup": "\U0001f44d",',
+            ],
+        )
+        # the license of gemoji goes with them
+        self.assertIn("# Copyright (c) 2019 GitHub, Inc.\n", source)
+        self.assertIn("# OTHER DEALINGS IN THE SOFTWARE.\n", source)
+
+    def test_main(self):
+        path = os.path.join(self.folder, "emoji.json")
+        with open(path, "w", encoding="utf-8") as fp:
+            json.dump(self.ENTRIES, fp)
+        module = os.path.join(self.folder, "emoji.py")
+        self.patch(self.tool, "MODULE", module)
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            self.assertEqual(self.tool.main([path]), 0)
+        self.assertEqual(out.getvalue(), f"4 names of 3 emoji in {module}\n")
+        with open(module, encoding="utf-8") as fp:
+            self.assertEqual(len(self.names(fp.read())), 4)
+
+    def test_the_module_of_the_package(self):
+        """The module that the tool wrote, as it writes it."""
+        from virtualbricks.emoji import NAMES
+
+        with open(self.tool.MODULE, encoding="utf-8") as fp:
+            self.assertEqual(fp.read(), self.tool.module(NAMES))

@@ -318,6 +318,10 @@ hub_mode = false  # default</screen>
           <p>Emphasis.</p>
         </item>
         <item>
+          <title><code>:smile:</code></title>
+          <p>An emoji, by the name that GitHub gives it, as <code>:+1:</code> or <code>:warning:</code>. A name next to a letter, a digit or another <code>:</code> stays text, as <code>:ab:</code> in the MAC address <code>52:54:00:ab:cd:ef</code>; names in a row, <code>:tada::rocket:</code>, are emoji, all of them or none.</p>
+        </item>
+        <item>
           <title><code>`code`</code></title>
           <p>Code. A line of three backquotes, <code>```</code>, above and below some lines makes a block of code.</p>
         </item>

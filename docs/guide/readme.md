@@ -31,7 +31,7 @@ mark, **Syntax**, shows what the text can hold. A project without a README
 says so, and the pencil writes one.
 
 ![Writing the
-README](figures/readme-edit.png){alt="The Readme tab with the text of the README in the editor, and the eye and the question mark over the top right corner; the syntax open under the question mark: a heading, emphasis, code, a list, a quote, a table, a link, a picture and a line across, and what each is."}
+README](figures/readme-edit.png){alt="The Readme tab with the text of the README in the editor, and the eye and the question mark over the top right corner; the syntax open under the question mark: a heading, emphasis, an emoji, code, a list, a quote, a table, a link, a picture and a line across, and what each is."}
 
 The editor is plain text, without colours. The README is saved at most 30
 seconds after a change, and when you leave the tab, when the project is saved,
@@ -108,6 +108,16 @@ A paragraph
 `~~struck~~`
 
 :   Struck through, with two tildes on each side.
+
+`:smile:`
+
+:   An emoji, by the name that GitHub gives it: `:smile:` is 😄, `:+1:` 👍,
+    `:warning:` ⚠️, `:penguin:` 🐧. A name stuck to a letter, a digit or a `:`
+    stays text, so that `:ab:` and `:cd:` in the address `52:54:00:ab:cd:ef`
+    stay as they are; but names in a row, `:tada::rocket:`, are emoji, all
+    of them or none. `\:smile:` and `` `:smile:` `` stay text too. The emoji
+    show in colour with a font of colour emoji, as Noto Color Emoji;
+    without one, as boxes.
 
 `` `code` ``
 
@@ -224,9 +234,7 @@ These show as you typed them, marks and all:
 - a link by reference, `[text][name]`, with `[name]: https://…` on a line of
   its own, and a footnote, `[^1]`;
 
-- a task, `- [ ] todo`, which shows `[ ]` after the bullet;
-
-- an emoji by its name, as `:smile:`; type the emoji itself instead.
+- a task, `- [ ] todo`, which shows `[ ]` after the bullet.
 
 Also:
 

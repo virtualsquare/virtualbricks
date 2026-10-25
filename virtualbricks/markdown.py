@@ -39,12 +39,16 @@ the core that GitHub, GitLab and most editors share:
 - rules, ``---``;
 - tables, as GitHub writes them: rows of cells between ``|``, and a line
   of ``---`` under the first row, the header; a ``:`` at the left, the
-  right or both ends of a ``---`` aligns its column.
+  right or both ends of a ``---`` aligns its column;
+- emoji by the names that GitHub gives them, ``:smile:``, from
+  :mod:`virtualbricks.emoji`; but a name stuck to a letter, a digit or a
+  colon stays text, as ``:ab:`` in the MAC address ``52:54:00:ab:cd:ef``.
 
 Anything else stays text: raw HTML, a line indented by four spaces. The
 parser is markdown-it-py, from its "zero" preset, where every rule is off,
-with only the rules of this syntax on. The renderers walk its tokens; a
-``softbreak`` is a line break for them.
+with only the rules of this syntax on, and a rule of its own for the emoji,
+which become text. The renderers walk its tokens; a ``softbreak`` is a line
+break for them.
 """
 
 from __future__ import annotations
@@ -53,7 +57,10 @@ import re
 from urllib.parse import unquote, urlsplit
 
 from markdown_it import MarkdownIt
+from markdown_it.rules_inline import StateInline
 from markdown_it.token import Token
+
+from virtualbricks.emoji import NAMES as EMOJI
 
 RULES = (
     "heading",
@@ -75,8 +82,41 @@ RULES = (
 )
 # A URL written as text; it ends before the punctuation that ends a sentence.
 BARE_URL = re.compile(r"https?://[^\s<>]*[^\s<>.,;:!?'\")\]]")
+# Emoji names in a row, :tada: or :tada::rocket:, and not stuck to what
+# follows them: :ab:, :cd: and :100: are names, and parts of addresses too,
+# as in the MAC address 52:54:00:ab:cd:ef and the IPv6 address fd00:ab::100:1.
+EMOJI_NAMES = re.compile(r"(?::[a-z0-9_+-]+:)+(?![\w:])")
+EMOJI_NAME = re.compile(r":([a-z0-9_+-]+):")
+# What a name can't follow, either.
+STUCK = re.compile(r"[\w:]")
+
+
+def _emoji(state: StateInline, silent: bool) -> bool:
+    """
+    An inline rule of markdown-it: emoji names, as their emoji, all or none
+    of a row. The emoji are text, with the text around them; an escaped
+    colon, ``\\:smile:``, is never the start of a name.
+    """
+
+    start = state.pos
+    if state.src[start] != ":":
+        return False
+    if start > 0 and STUCK.match(state.src[start - 1]):
+        return False
+    found = EMOJI_NAMES.match(state.src, start, state.posMax)
+    if found is None:
+        return False
+    names = EMOJI_NAME.findall(found.group())
+    if not all(name in EMOJI for name in names):
+        return False
+    if not silent:
+        state.pending += "".join(EMOJI[name] for name in names)
+    state.pos = found.end()
+    return True
+
 
 _PARSER = MarkdownIt("zero").enable(list(RULES))
+_PARSER.inline.ruler.push("emoji", _emoji)
 
 
 def parse(text: str) -> list[Token]:

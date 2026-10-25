@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-25 14:24+0100\n"
+"POT-Creation-Date: 2026-10-25 14:52+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -4578,6 +4578,10 @@ msgstr ""
 
 #: virtualbricks/gui/mainwindow/readme.py
 msgid "emphasis; ~~struck~~"
+msgstr ""
+
+#: virtualbricks/gui/mainwindow/readme.py
+msgid "an emoji, by its name on GitHub"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/readme.py

@@ -22,7 +22,7 @@
     <figure>
       <title>Writing the README</title>
       <media type="image" mime="image/png" src="figures/readme-edit.png">
-        <p>The Readme tab with the text of the README in the editor, and the eye and the question mark over the top right corner; the syntax open under the question mark: a heading, emphasis, code, a list, a quote, a table, a link, a picture and a line across, and what each is.</p>
+        <p>The Readme tab with the text of the README in the editor, and the eye and the question mark over the top right corner; the syntax open under the question mark: a heading, emphasis, an emoji, code, a list, a quote, a table, a link, a picture and a line across, and what each is.</p>
       </media>
     </figure>
     <p>The editor is plain text, without colours. The README is saved at most 30 seconds after a change, and when you leave the tab, when the project is saved, and when you quit. The tab reads the file again each time it shows: a README changed in another editor shows when you come back to the tab.</p>
@@ -78,6 +78,10 @@
       <item>
         <title><code>~~struck~~</code></title>
         <p>Struck through, with two tildes on each side.</p>
+      </item>
+      <item>
+        <title><code>:smile:</code></title>
+        <p>An emoji, by the name that GitHub gives it: <code>:smile:</code> is 😄, <code>:+1:</code> 👍, <code>:warning:</code> ⚠️, <code>:penguin:</code> 🐧. A name stuck to a letter, a digit or a <code>:</code> stays text, so that <code>:ab:</code> and <code>:cd:</code> in the address <code>52:54:00:ab:cd:ef</code> stay as they are; but names in a row, <code>:tada::rocket:</code>, are emoji, all of them or none. <code>\:smile:</code> and <code>`:smile:`</code> stay text too. The emoji show in colour with a font of colour emoji, as Noto Color Emoji; without one, as boxes.</p>
       </item>
       <item>
         <title><code>`code`</code></title>
@@ -169,10 +173,7 @@
         <p>a link by reference, <code>[text][name]</code>, with <code>[name]: https://…</code> on a line of its own, and a footnote, <code>[^1]</code>;</p>
       </item>
       <item>
-        <p>a task, <code>- [ ] todo</code>, which shows <code>[ ]</code> after the bullet;</p>
-      </item>
-      <item>
-        <p>an emoji by its name, as <code>:smile:</code>; type the emoji itself instead.</p>
+        <p>a task, <code>- [ ] todo</code>, which shows <code>[ ]</code> after the bullet.</p>
       </item>
     </list>
     <p>Also:</p>
