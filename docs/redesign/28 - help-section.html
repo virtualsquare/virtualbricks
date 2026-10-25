@@ -276,12 +276,12 @@
 </style>
 <div class="page">
   <header class="masthead">
-    <div class="eyebrow">Step 28 &middot; Design &middot; revision 14, implemented</div>
+    <div class="eyebrow">Step 28 &middot; Design &middot; revision 15, implemented</div>
     <h1>Virtualbricks Help</h1>
     <p class="lede">A user guide for the windows of Virtualbricks: Help &rarr; Contents, or F1 in any window, opens the page about that window. The pages are written once, in Mallard, the format of the GNOME help. Yelp shows them where it is installed, and anywhere else the browser shows the same pages as HTML.</p>
     <ul class="meta">
       <li>branch <b>develop</b> at 2de30a6</li>
-      <li>revision 14 &middot; 22 October 2026</li>
+      <li>revision 15 &middot; 25 October 2026</li>
       <li><span class="status done">implemented</span></li>
     </ul>
     <p class="revision"><strong>What this covers:</strong> your questions of today, &ldquo;what is the standard way to add an help section to the application?&rdquo; and &ldquo;Does mallard works if I don&rsquo;t have yelp installed?&rdquo;, then your request, &ldquo;write the design page for the help section&rdquo;. The eight questions, H1 to H8 in <a href="#decisions">&sect;11</a>, are decided.</p>
@@ -299,6 +299,7 @@
     <p class="revision">The same day, step 3 of page 33: the HTML of <a href="#build">&sect;6</a> is written by <code>docs/build.py</code> with pandoc, in <code>docs/built/html/</code>, in place of yelp-build&rsquo;s: <code>help/build.py</code>, <code>help/html.xsl</code> and the hook <code>help</code> are gone, and the Yelp tools are needed only by the tests. The HTML has the look of the reference pages, and what Yelp adds to a page: the way back to the index, See also, the lists of the index. <code>gui/help.py</code> opens it from there, and it is installed where it was.</p>
     <p class="revision">Then step 5 of page 33, on <code>website</code>, 0fa857ee: <code>invoke sync-docs</code> of <a href="#website">&sect;7</a> copies <code>docs/built/html/</code> in place of <code>help/html/C/</code>, the reference pages with the guide, and fills the pages of the Documentation from the same HTML, not from <code>docs/NAME.html</code>, which is gone; a350dc4a is the first copy. The addresses of the site stay.</p>
     <p class="revision">Then, on 22 October, at your request, &ldquo;The documentation section in the website is just a repetition of the reference in the user guide. You can remove it&rdquo;: the website has no Documentation any more. Its five pages were the reference pages of the guide, which the sync copies into <code>content/help/C/</code> with the rest. <code>website</code> 546c36a0 removes the category, its pages and their template <code>doc.html</code>; <code>invoke sync-docs</code> of <a href="#website">&sect;7</a> copies the help only, and the menu has Home, Authors, News and User guide. The reference is at <code>/help/C/NAME.html</code>; <code>/documentation/NAME.html</code> goes with the next <code>make github</code>.</p>
+    <p class="revision">Then, on 25 October, at your request, the <code>website</code> branch came into <code>develop</code>, in <code>website/</code>, with its history, by <code>git subtree add</code> (7bd60016): the site and the guide are in the same commit, and the site has no copy of the guide any more. <code>invoke sync-docs</code> goes, with <code>tasks.py</code> and <code>invoke</code>, and so does <code>content/help/C/</code>: once Pelican has written the site, <code>plugins/user_guide.py</code>, which was <code>help_bar.py</code>, copies <code>docs/built/html/</code> into <code>help/C/</code> with the same two changes, the links to the site made relative and the bar of the site on top. The guide is that of the checkout, and <code>make publish</code> stops while <code>docs/built/html/</code> has changes not committed. <code>DOCS_REF</code>, empty unless the command line gives it, names a commit whose guide <code>git archive</code> reads, so that the site can have the guide of the latest release once 3.0 is out (H7). Built with <code>DOCS_REF</code> at d7767e31, the commit of the last copy, the site is byte for byte that of <code>website</code> ce834395.</p>
   </header>
 
   <div class="layout">

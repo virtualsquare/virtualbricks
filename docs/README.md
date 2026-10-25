@@ -21,11 +21,12 @@ outputs. The `docs` hook of pre-commit runs the script on every commit that
 changes a source.
 
 The HTML is for a computer without Yelp, where Virtualbricks opens it in the
-browser, and for the website. It has what Yelp adds to a page: the way back
-to the sections of the index that list it, See also, with the pages it names
-and those that name it, and the lists of the index, each page with the line
-of its `desc`. Its links stay in the tree, so that it works without the
-network: a link to a page names its file, `command-line.html`.
+browser, and for the website, `website/`, which copies it as it builds. It has
+what Yelp adds to a page: the way back to the sections of the index that list
+it, See also, with the pages it names and those that name it, and the lists of
+the index, each page with the line of its `desc`. Its links stay in the tree,
+so that it works without the network: a link to a page names its file,
+`command-line.html`.
 
 The design pages of `redesign/` are written in HTML, by hand, and stay out of
 the build.

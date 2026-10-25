@@ -1,11 +1,20 @@
-============================
-Virtualbricks Website branch
-============================
+=========================
+The Virtualbricks website
+=========================
 
-This branch is the source code for the `Virtualbricks website`_.
+This folder is the source code of the `Virtualbricks website`_. Until
+October 2026 it was a branch of its own, **website**, which came here
+with its history (``git log -- website``).
 
 The website is built using Pelican_. Check the documentation for the
-general use. Following is the project specific configuration.
+general use. Following is the project specific configuration. The
+commands run in this folder; *requirements.txt* has what they need, as
+does the *website* dependency group of *pyproject.toml*:
+
+.. code::
+
+   $ pip install -r requirements.txt
+   $ make html
 
 .. _Virtualbricks website: https://www.virtualbricks.it
 .. _Pelican: https://blog.getpelican.com/
@@ -14,9 +23,9 @@ Github pages
 ============
 
 The website is published using the `Github pages`_. The branch used to
-publish the website is gh-pages_. The **website** branch is used to
-create the content and to build the html, the **gh-pages** branch is
-used to publish the website.
+publish the website is gh-pages_. This folder is used to create the
+content and to build the html, the **gh-pages** branch is used to
+publish the website.
 
 The Makefile rule *github* is used to build and publish the website. The
 command uses the **virtualsquare** remote. This means you should have a
@@ -58,41 +67,30 @@ The home page is *content/pages/home.rst*, a hidden page with the slug
 *home*, saved as *index.html*: Elegant's own home page, the *index*
 template, is not built.
 
-The help
-========
+The user guide
+==============
 
-The user guide, *content/help/C/*, is a copy of what a commit of
-**develop** has: the HTML of the guide and of its reference, the man
-pages, that *docs/build.py* writes into *docs/built/html/*. It is never
-edited here. The task *sync-docs*, of *tasks.py*, makes it, and says how
-to commit it:
+The user guide on the site, *help/C/*, is the HTML of the guide and of
+its reference, the man pages, that *docs/build.py* writes into
+*docs/built/html/*: the same pages that Virtualbricks opens in the
+browser without Yelp. The site has no copy of them. Once Pelican has
+written the site, the plugin *plugins/user_guide.py* copies them into
+it, as they are but for two changes to each page. A link to the site
+in full, *https://www.virtualbricks.it/*, as the installed guide needs,
+links within the site, relative to its folder, so that a local build
+doesn't lead to the published site. And the page gets the bar of the
+site, *help_bar.html*, with the menu of the other pages, on top: the
+guide has no way back to the site of its own.
 
-.. code::
-
-   $ git fetch virtualsquare
-   $ invoke sync-docs virtualsquare/develop
-   $ git add content && git commit -m "Help of develop 1234abcd"
-
-The guide is copied as it is, with its reference and its style, and Pelican
-doesn't read it: *help* is in *STATIC_PATHS*, *ARTICLE_EXCLUDES* and
-*PAGE_EXCLUDES*. One thing changes on the way: a link to the site in full,
-*https://www.virtualbricks.it/*, links within the site, relative to its
-folder, so that a local build doesn't lead to the published site.
-
-The guide has no way back to the site of its own: the plugin
-*plugins/help_bar.py* puts the bar of the site, *help_bar.html*, with the
-menu of the other pages, on top of each page of the guide that Pelican
-copies into the output. *content/help/C/* stays as **develop** has it.
-
-*make publish*, and so *make github*, first runs ``invoke sync-docs --check
-$(DOCS_REF)``, *develop* unless the command line says otherwise, and stops
-while the site differs from it. While 3.0 is in development the site
-follows **develop**; once it is out, the latest release:
+The guide is the one of the checkout, and *make publish*, and so *make
+github*, stops while *docs/built/html/* has changes not committed. While
+3.0 is in development the site is published from **develop**, and its
+guide is that of **develop**. Once it is out, the guide should be that
+of the latest release: *DOCS_REF* names the commit whose guide the site
+has, a tag or a hash, which *git archive* reads.
 
 .. code::
 
    $ make github DOCS_REF=v3.0.0
-
-*invoke* is in *requirements.txt*.
 
 .. _Elegant: https://github.com/Pelican-Elegant/elegant

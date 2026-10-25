@@ -10,14 +10,16 @@ SITEURL = ""
 
 PATH = "content"
 
-# The help, the HTML of the user guide that invoke sync-docs copies from
-# develop, is copied as it is, not read as articles or pages
-STATIC_PATHS = ["images", "help"]
-ARTICLE_EXCLUDES = ["help"]
-PAGE_EXCLUDES = ["help"]
-# ...and each of its pages gets the bar of the site on top
+STATIC_PATHS = ["images"]
+# The user guide, the HTML that docs/build.py writes into docs/built/html,
+# goes into help/C/ as it is, each page with the bar of the site on top
+# (plugins/user_guide.py): as the checkout has it, or as the commit DOCS_REF
+# has it, a tag or a hash, make publish DOCS_REF=v3.0.0
+GUIDE_ROOT = joinpath(curdir, "..")
+GUIDE_PATH = "docs/built/html"
+DOCS_REF = None
 PLUGIN_PATHS = [joinpath(curdir, "plugins")]
-PLUGINS = ["help_bar"]
+PLUGINS = ["user_guide"]
 
 TIMEZONE = "Europe/Rome"
 

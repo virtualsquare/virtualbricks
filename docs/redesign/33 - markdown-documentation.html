@@ -244,12 +244,12 @@
 
 <div class="page">
   <header class="masthead">
-    <div class="eyebrow">Step 33 &middot; Design &middot; revision 10, implemented</div>
+    <div class="eyebrow">Step 33 &middot; Design &middot; revision 11, implemented</div>
     <h1>One source for the documentation</h1>
     <p class="lede">The documentation is in four forms, each written by hand: the man pages in pandoc&rsquo;s Markdown, their HTML twins, the guide in Mallard for Yelp, and the design pages in HTML. This page makes the documentation of Virtualbricks Markdown, built by one script into man pages, Mallard pages for Yelp and HTML, with one look for every HTML page it builds, so that each thing is written once. The reference is in Yelp too, as pages of its own. The design pages stay as they are.</p>
     <ul class="meta">
       <li>branch <b>develop</b> at 18a2f147</li>
-      <li>revision 10 &middot; 22 October 2026</li>
+      <li>revision 11 &middot; 25 October 2026</li>
       <li><span class="status done">implemented</span></li>
     </ul>
     <p class="revision"><strong>What this covers:</strong> your request of today: &ldquo;I want to uniform all of this. I don&rsquo;t like Yelp much, but I want the documentation available in the app, so it seems the best option for now. The help should be written in Markdown, that is subsequently converted in yelp pages or html.&rdquo; The facts of <a href="#today">&sect;2</a> were checked today on <code>develop</code>, and pandoc 3.9, the one the man pages are built with, was tried on a page of the guide written in Markdown (<a href="#guide">&sect;4</a>). Seven questions in <a href="#decisions">&sect;9</a>, U1 to U6 and U8, are decided.</p>
@@ -268,6 +268,7 @@
     <p class="revision"><strong>Implemented</strong> on 21 October 2026, the five steps of <a href="#plan">&sect;8</a>: on <code>mg/markdown-docs</code>, from f7ebc10b of <code>develop</code>, f980e84d, 709da005, f5bea945 and 922c079d; on <code>website</code>, 0fa857ee and a350dc4a. Nothing is pushed, and <code>mg/markdown-docs</code> isn&rsquo;t merged into <code>develop</code>. The differences from the plan are in the paragraphs of each step above.</p>
     <p class="revision"><strong>Since then:</strong> on 22 October, for your report that the diagram of <code>figures/archive-process.svg</code> was off, &ldquo;the ArchiveJob line and two others are shifted to the left&rdquo;. Yelp shows the ASCII of a diagram (U8 A), and the stylesheet of yelp-xsl centers what a figure holds, for its pictures: each line of the listing was centered on its own, and the three lines longer than the others went left by half the difference. Every diagram had lines of uneven width. A diagram is now a Mallard <code>listing</code> with its caption as the <code>desc</code>, which Yelp shows above the ASCII, in italics; the man pages and the HTML don&rsquo;t change. Checked in Yelp 42.2, and the 16 listings with the stylesheet of yelp-xsl; a test checks that each diagram is a listing and that no figure holds a screen.</p>
     <p class="revision">Then, the same day, at your request, &ldquo;The documentation section in the website is just a repetition of the reference in the user guide. You can remove it&rdquo;: the pages of the Documentation that step 5 fills are gone, with the category, from <code>website</code> 546c36a0. Step 5 copies the reference into <code>content/help/C/</code> with the guide, so the site has each page once, at <code>/help/C/NAME.html</code>; <code>/documentation/NAME.html</code> goes with the next <code>make github</code>.</p>
+    <p class="revision">Then, on 25 October, the site came into <code>develop</code>, in <code>website/</code>: the <code>invoke sync-docs</code> of step 5 is gone, and the site copies <code>docs/built/html/</code> as it builds (<a href="28%20-%20help-section.html">page 28</a>, Since then).</p>
   </header>
 
   <div class="layout">

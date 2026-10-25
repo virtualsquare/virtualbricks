@@ -247,12 +247,12 @@
 
 <div class="page">
   <header class="masthead">
-    <div class="eyebrow">Step 29 &middot; Design &middot; revision 6, implemented</div>
+    <div class="eyebrow">Step 29 &middot; Design &middot; revision 7, implemented</div>
     <h1>Pictures in the Guide</h1>
     <p class="lede">The pages of the user guide get a picture of the window they are about, taken by the end-to-end tests on Broadway. When a window changes, its picture is taken again by the same scenario, so the guide shows the windows as they are.</p>
     <ul class="meta">
       <li>branch <b>develop</b> at 9d0082fa</li>
-      <li>revision 6 &middot; 21 October 2026</li>
+      <li>revision 7 &middot; 25 October 2026</li>
       <li><span class="status done">implemented</span></li>
     </ul>
     <p class="revision"><strong>What this covers:</strong> your request of today, &ldquo;work on this point in the TODO list: Pictures in the pages, taken by the e2e tests on Broadway, so that they follow the windows (28 &sect;12)&rdquo;. The five questions, F1 to F5 in <a href="#decisions">&sect;10</a>, are decided.</p>
@@ -263,6 +263,7 @@
     <p class="revision"><strong>Since then:</strong> on 13 October, step 4 on <code>website</code>, c0592f31: <code>invoke sync-docs develop</code> from baea0334 added the eleven pictures in <code>content/help/C/figures/</code>, in Git LFS, the same bytes as on <code>develop</code>, and the eleven pages that show them; the Documentation pages didn&rsquo;t change. <code>--check</code> passes after it. Built with Pelican 4.12 and Elegant in a scratch worktree, <code>output/help/C/</code> has the eleven pictures, and each <code>&lt;img&gt;</code> and link of the guide reaches a file. Not pushed.</p>
     <p class="revision">Then, on 21 October, step 1 of <a href="33%20-%20markdown-documentation.html">page 33</a>: the pictures are in <code>docs/guide/figures/</code>, beside the Markdown of the pages, where <code>pytest --pictures</code> writes them; <code>docs/build.py</code> copies them beside the built Mallard, and <code>help/build.py</code> beside the HTML, as before. A figure is written <code>![title](figures/NAME.png){alt="&hellip;"}</code>, and a picture without its text stops the build.</p>
     <p class="revision">The same day, step 3 of page 33: <code>docs/build.py</code> copies the pictures beside the HTML too, which pandoc writes in place of yelp-build; the stylesheet of the HTML shrinks a picture to its column, as <code>help/html.xsl</code> did, and a click on it opens it in full.</p>
+    <p class="revision">Then, on 25 October, the site came into <code>develop</code>, in <code>website/</code>: it takes the pictures with the pages of <code>docs/built/html/</code> as it builds, and <code>invoke sync-docs</code> is gone (<a href="28%20-%20help-section.html">page 28</a>, Since then).</p>
   </header>
 
   <div class="layout">

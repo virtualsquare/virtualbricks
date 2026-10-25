@@ -12,10 +12,9 @@ GITHUB_PAGES_BRANCH=gh-pages
 GITHUB_PAGES_REMOTE=virtualsquare
 GITHUB_PAGES_CNAME=www.virtualbricks.it
 
-# The commit of develop whose help the site has: publish stops while the
-# help differs from it (invoke sync-docs)
-INVOKE?=invoke
-DOCS_REF?=develop
+# The commit whose user guide the site has, a tag or a hash: if none, the
+# guide as the checkout has it, which publish wants committed
+DOCS_REF?=
 
 
 DEBUG ?= 0
@@ -35,6 +34,10 @@ ifneq ($(PORT), 0)
 	PELICANOPTS += -p $(PORT)
 endif
 
+ifneq ($(DOCS_REF),)
+	PELICANOPTS += -e 'DOCS_REF="$(DOCS_REF)"'
+endif
+
 default: html
 
 help:
@@ -45,7 +48,7 @@ help:
 	@echo '   make clean                          remove the generated files         '
 	@echo '   make regenerate                     regenerate files upon modification '
 	@echo '   make publish                        generate using production settings '
-	@echo '                                       once the help is that of DOCS_REF  '
+	@echo '                                       with the user guide committed      '
 	@echo '   make serve [PORT=8000]              serve site at http://localhost:8000'
 	@echo '   make serve-global [SERVER=0.0.0.0]  serve (as root) to $(SERVER):80    '
 	@echo '   make devserver [PORT=8000]          serve and regenerate together      '
@@ -54,6 +57,7 @@ help:
 	@echo '                                                                          '
 	@echo 'Set the DEBUG variable to 1 to enable debugging, e.g. make DEBUG=1 html   '
 	@echo 'Set the RELATIVE variable to 1 to enable relative urls                    '
+	@echo 'Set DOCS_REF to a commit for its user guide, e.g. make DOCS_REF=v3.0.0    '
 	@echo '                                                                          '
 
 html:
@@ -78,7 +82,8 @@ devserver-global:
 	$(PELICAN) -lr $(INPUTDIR) -o $(OUTPUTDIR) -s $(CONFFILE) $(PELICANOPTS) -b 0.0.0.0
 
 publish: clean
-	"$(INVOKE)" sync-docs --check $(DOCS_REF)
+	@[ -n "$(DOCS_REF)" ] || [ -z "$$(git status --porcelain -- ../docs/built/html)" ] \
+		|| { echo "docs/built/html has changes not committed: commit them, or give DOCS_REF" >&2; exit 1; }
 	"$(PELICAN)" "$(INPUTDIR)" -o "$(OUTPUTDIR)" -s "$(PUBLISHCONF)" $(PELICANOPTS)
 
 github: publish
