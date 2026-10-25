@@ -36,10 +36,13 @@ the core that GitHub, GitLab and most editors share:
 - pictures, ``![text](path)``, where the path is relative to the folder
   of the project: the view shows a picture that is in the folder, and the
   text of any other;
-- rules, ``---``.
+- rules, ``---``;
+- tables, as GitHub writes them: rows of cells between ``|``, and a line
+  of ``---`` under the first row, the header; a ``:`` at the left, the
+  right or both ends of a ``---`` aligns its column.
 
-Anything else stays text: a table, raw HTML, a line indented by four spaces.
-The parser is markdown-it-py, from its "zero" preset, where every rule is off,
+Anything else stays text: raw HTML, a line indented by four spaces. The
+parser is markdown-it-py, from its "zero" preset, where every rule is off,
 with only the rules of this syntax on. The renderers walk its tokens; a
 ``softbreak`` is a line break for them.
 """
@@ -59,6 +62,7 @@ RULES = (
     "blockquote",
     "fence",
     "hr",
+    "table",
     "emphasis",
     "strikethrough",
     "backticks",
@@ -146,12 +150,24 @@ def first_line(text: str) -> str:
     The first line of a README as plain text, for a list of projects.
 
     It's the first line of the first block that has text: a heading without
-    its ``#``, a paragraph without its marks, the first line of a code block.
+    its ``#``, a paragraph without its marks, the first line of a code block,
+    the first row of a table with `` | `` between its cells.
     """
 
+    # the cells of the row of a table being read
+    row: list[str] | None = None
     for token in parse(text):
-        if token.type == "inline" and token.children:
+        if token.type == "tr_open":
+            row = []
+            continue
+        if token.type == "tr_close" and row is not None:
+            line = " | ".join(cell for cell in row if cell)
+            row = None
+        elif token.type == "inline" and token.children:
             line = plain_text(token.children, first_line=True).strip()
+            if row is not None:
+                row.append(line)
+                continue
         elif token.type == "fence":
             line = token.content.split("\n", 1)[0].strip()
         else:

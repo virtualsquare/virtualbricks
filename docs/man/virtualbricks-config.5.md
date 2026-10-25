@@ -376,7 +376,7 @@ reads as Markdown. The Readme tab shows it rendered, and its pencil button
 edits the text; the details of the Projects window show it rendered too.
 The list of projects shows its first line, and the import window its first
 paragraph that isn't a heading. The syntax is a subset of CommonMark, the
-part that most editors and forges share:
+part that most editors and forges share, with the tables of GitHub:
 
 **\# Title**, **\#\# Title**
 :   A heading, with up to six **\#**. A line underlined with **===** or
@@ -400,6 +400,13 @@ part that most editors and forges share:
 **\> text**
 :   A quote.
 
+**\| a \| b \|**
+:   A row of a table. Under the first row, the header, a line with a
+    **\-\-\-** for each column, **\|\-\-\-\|\-\-\-\|**, makes the lines a
+    table. A **:** at the right end of a **\-\-\-** aligns its column to
+    the right, at both ends in the middle. The columns line up, and a row
+    doesn't wrap; a picture in a cell shows as its text.
+
 **\[text\](https://\...)**, **\<https://\...\>**
 :   A link. A URL written as it is, starting with **http://** or
     **https://**, is a link too. Only **http**, **https** and **mailto**
@@ -421,8 +428,7 @@ part that most editors and forges share:
 **\\**
 :   A backslash before a mark keeps the mark: **\\\*** is a star.
 
-Anything else shows as it's written: a table, HTML, a line indented by four
-spaces.
+Anything else shows as it's written: HTML, a line indented by four spaces.
 
 # BRICK TYPES
 

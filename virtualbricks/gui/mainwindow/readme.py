@@ -67,6 +67,7 @@ SYNTAX = (
     ("`code`", _("code; ``` above and below a block")),
     ("- item", _("a list; 1. for a numbered one")),
     ("> quote", _("a quote")),
+    ("| a | b |", _("a table; |---|---| under its first row")),
     ("[text](https://…)", _("a link; a bare URL is one too")),
     ("![text](picture.png)", _("a picture in the folder of the project")),
     ("---", _("a line across")),

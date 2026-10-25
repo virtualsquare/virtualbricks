@@ -31,7 +31,7 @@ mark, **Syntax**, shows what the text can hold. A project without a README
 says so, and the pencil writes one.
 
 ![Writing the
-README](figures/readme-edit.png){alt="The Readme tab with the text of the README in the editor, and the eye and the question mark over the top right corner; the syntax open under the question mark: a heading, emphasis, code, a list, a quote, a link, a picture and a line across, and what each is."}
+README](figures/readme-edit.png){alt="The Readme tab with the text of the README in the editor, and the eye and the question mark over the top right corner; the syntax open under the question mark: a heading, emphasis, code, a list, a quote, a table, a link, a picture and a line across, and what each is."}
 
 The editor is plain text, without colours. The README is saved at most 30
 seconds after a change, and when you leave the tab, when the project is saved,
@@ -41,7 +41,7 @@ changed in another editor shows when you come back to the tab.
 ## The syntax {#syntax}
 
 The syntax is CommonMark, the Markdown that GitHub, GitLab and most editors
-share, but for what [](readme#limits) lists. The file stays as you wrote it:
+share, with the tables of GitHub, but for what [](readme#limits) lists. The file stays as you wrote it:
 the marks show rendered only where the README is read.
 
 ::: {.terms title="Blocks"}
@@ -75,6 +75,11 @@ A paragraph
 
 :   A quote, in fainter text, indented. `>>` is a quote in a quote, and a quote
     can hold lists and code.
+
+`| a | b |`
+
+:   A row of a table, a line with a `|` before each cell and after the last;
+    see [](readme#tables).
 
 ```` ``` ````
 
@@ -127,6 +132,29 @@ A paragraph
 :   An entity of HTML is its character: `&copy;` is ©, `&amp;` is &, `&nbsp;`
     a space that never breaks.
 :::
+
+## Tables {#tables}
+
+A table is a line for each row, with its cells between `|`. Under the first
+row, the header, a line with a `---` for each column makes the lines a
+table:
+
+    | Machine | Address    | Users |
+    |---------|-----------:|:-----:|
+    | vm1     | 10.0.0.1   | 2     |
+    | router  | 10.0.0.254 | 0     |
+
+The header is bold, with a line under it, and the columns line up whatever
+the spaces in the text. A `:` aligns the cells of a column: `---:` to the
+right, `:---:` in the middle, and `:---` or `---` to the left. A row with
+fewer cells than the header ends with empty ones, and the cells of a row past
+those of the header are left out.
+
+A cell holds emphasis, code and links, but a picture shows as its text, and
+a `|` in a cell is written `\|`. A row doesn't wrap: in the **Readme** tab, a
+table wider than the tab goes past its right edge, and the tab scrolls
+sideways to it; the Projects window cuts it at its edge. Copied, a row keeps
+a tab between its cells.
 
 ## Links {#links}
 
@@ -191,9 +219,6 @@ of the project, so the README shows them on the other computer too; see
 
 These show as you typed them, marks and all:
 
-- a table, with its `|`: put it in a block of code, whose monospace font keeps
-  its columns;
-
 - HTML, as `<b>` or `<br>`;
 
 - a link by reference, `[text][name]`, with `[name]: https://…` on a line of
@@ -212,6 +237,8 @@ Also:
 
 - The title of a link or of a picture, `[text](https://example.org "Title")`,
   is left out.
+
+- A picture in a table shows as its text.
 
 - The headings below `##` are all of one size.
 

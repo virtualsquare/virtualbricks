@@ -303,7 +303,7 @@ hub_mode = false  # default</screen>
     </section>
     <section id="projects-readme">
       <title>README</title>
-      <p>The <var>README.md</var> of a project is plain text in UTF-8, which Virtualbricks reads as Markdown. The Readme tab shows it rendered, and its pencil button edits the text; the details of the Projects window show it rendered too. The list of projects shows its first line, and the import window its first paragraph that isn't a heading. The syntax is a subset of CommonMark, the part that most editors and forges share:</p>
+      <p>The <var>README.md</var> of a project is plain text in UTF-8, which Virtualbricks reads as Markdown. The Readme tab shows it rendered, and its pencil button edits the text; the details of the Projects window show it rendered too. The list of projects shows its first line, and the import window its first paragraph that isn't a heading. The syntax is a subset of CommonMark, the part that most editors and forges share, with the tables of GitHub:</p>
       <terms>
         <item>
           <title><code># Title</code>, <code>## Title</code></title>
@@ -330,6 +330,10 @@ hub_mode = false  # default</screen>
           <p>A quote.</p>
         </item>
         <item>
+          <title><code>| a | b |</code></title>
+          <p>A row of a table. Under the first row, the header, a line with a <code>---</code> for each column, <code>|---|---|</code>, makes the lines a table. A <code>:</code> at the right end of a <code>---</code> aligns its column to the right, at both ends in the middle. The columns line up, and a row doesn't wrap; a picture in a cell shows as its text.</p>
+        </item>
+        <item>
           <title><code>[text](https://...)</code>, <code>&lt;https://...&gt;</code></title>
           <p>A link. A URL written as it is, starting with <code>http://</code> or <code>https://</code>, is a link too. Only <code>http</code>, <code>https</code> and <code>mailto</code> links open, in the browser or the mail client.</p>
         </item>
@@ -346,7 +350,7 @@ hub_mode = false  # default</screen>
           <p>A backslash before a mark keeps the mark: <code>\*</code> is a star.</p>
         </item>
       </terms>
-      <p>Anything else shows as it's written: a table, HTML, a line indented by four spaces.</p>
+      <p>Anything else shows as it's written: HTML, a line indented by four spaces.</p>
     </section>
   </section>
   <section id="brick-types">

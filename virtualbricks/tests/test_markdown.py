@@ -175,6 +175,27 @@ class TestSyntax(unittest.TestCase):
             ],
         )
 
+    def test_tables(self):
+        # after a line of text, as a README keeps its lines
+        text = "Hosts:\n| a | b | c |\n|:--|:-:|--:|\n| 1 | *2* |\n"
+        tokens = parse(text)
+        self.assertEqual(
+            [t.type for t in tokens if t.type.endswith("_open")],
+            ["paragraph_open", "table_open", "thead_open", "tr_open"]
+            + ["th_open"] * 3
+            + ["tbody_open", "tr_open"]
+            + ["td_open"] * 3,
+        )
+        self.assertEqual(
+            [t.attrGet("style") for t in tokens if t.type == "th_open"],
+            ["text-align:left", "text-align:center", "text-align:right"],
+        )
+        # a row short of a cell has it empty
+        self.assertEqual(
+            [plain_text(children) for children in inlines(text)],
+            ["Hosts:", "a", "b", "c", "1", "2", ""],
+        )
+
     def test_escapes_and_entities(self):
         [children] = inlines("\\*not italic\\* &amp; &copy;")
         self.assertEqual(plain_text(children), "*not italic* & ©")
@@ -182,7 +203,6 @@ class TestSyntax(unittest.TestCase):
 
     def test_what_stays_text(self):
         text = (
-            "| a | b |\n|---|---|\n| 1 | 2 |\n\n"
             "<div>html</div>\n\n"
             "    indented\n\n"
             "[ref]: https://a.org\n\n"
@@ -190,11 +210,9 @@ class TestSyntax(unittest.TestCase):
             "[a link](javascript:alert(1))\n"
         )
         kinds_of_blocks = {kind for kind, _ in blocks(text)}
-        self.assertNotIn("table_open", kinds_of_blocks)
         self.assertNotIn("html_block", kinds_of_blocks)
         self.assertNotIn("code_block", kinds_of_blocks)
         texts = [plain_text(children) for children in inlines(text)]
-        self.assertIn("| a | b |\n|---|---|\n| 1 | 2 |", texts)
         self.assertIn("<div>html</div>", texts)
         self.assertIn("indented", texts)
         self.assertIn("[ref]: https://a.org", texts)
@@ -230,6 +248,18 @@ class TestFirstLine(unittest.TestCase):
         self.assertEqual(first_line("```\n\n```\n\nText"), "Text")
         self.assertEqual(
             first_line("![a *map*](m.png) of the lab"), "a map of the lab"
+        )
+
+    def test_a_table(self):
+        self.assertEqual(
+            first_line(
+                "| Host | **Address** | |\n|---|---|---|\n| r1 | a | b |"
+            ),
+            "Host | Address",
+        )
+        # the first row with text
+        self.assertEqual(
+            first_line("| | |\n|---|---|\n| | |\n| r1 | `a` |"), "r1 | a"
         )
 
     def test_a_readme_written_as_plain_text(self):

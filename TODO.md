@@ -199,7 +199,7 @@
   the view under it, then the overlay, never the button (every target,
   3.24.41 to 3.24.52). The overlay answering query-tooltip for what floats
   over it works, and was turned down (22 Oct)
-- [ ] Render GFM's tables and task lists, if READMEs need them (05 §10)
+- [ ] Render GFM's task lists, if READMEs need them (05 §10)
 - [ ] Add buttons for bold, italic and lists to the editor (05 §10)
 - [ ] Show the preview in the New Project dialog too, if wanted
   (05 §10)
@@ -347,6 +347,10 @@
 
 # DONE
 
+- [x] Render GFM's tables in the README: the columns line up by tab stops
+  measured from the cells, aligned as the line under the header says, a
+  rule under the header; a row doesn't wrap, the Readme tab scrolls to a
+  wide one (page 5, Since then)
 - [x] Fade the bar of the Topology tab, and round its corners, as the
   buttons of the Readme tab: one FloatingBar for both (page 6, Since
   then)

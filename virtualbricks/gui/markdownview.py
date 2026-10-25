@@ -32,7 +32,13 @@ A picture is its text, until the view gets its bytes from the ``pictures``
 of :meth:`MarkdownView.set_markdown`: then the picture takes the place of
 its text, as wide as it is, or narrower to fit in the view. A picture that
 doesn't come, or can't be read, stays its text, and so does any picture in
-a label.
+a label or in a table.
+
+A row of a table is a line, with a tab before each cell but the first. The
+view sets the tab stops of the rows from the widths of the cells, so that
+the columns line up and each aligns as the table says, and draws a rule
+under the header as wide as the table; a row doesn't wrap. A label leaves
+the tabs as they are.
 """
 
 from __future__ import annotations
@@ -58,10 +64,11 @@ cannot_open_link = "Cannot open {uri}: {error}"
 
 # The schemes of the links that open, in the browser or the mail client.
 OPEN_SCHEMES = frozenset(("http", "https", "mailto"))
-# The indent of a level of list or quote, and the room below a block, in
-# pixels.
+# The indent of a level of list or quote, the room below a block, and the
+# room between the columns of a table, in pixels.
 INDENT = 24
 BLOCK_SPACE = 8
+COLUMN_SPACE = 24
 # The style of each name that the lines use; the colours come from the theme.
 STYLES: dict[str, dict[str, Any]] = {
     "h1": {"weight": Pango.Weight.BOLD, "scale": 1.4, "pixels_above_lines": 2},
@@ -77,6 +84,12 @@ STYLES: dict[str, dict[str, Any]] = {
     "code": {"family": "monospace"},
     "pre": {"family": "monospace", "right_margin": 12},
     "quote": {},
+    "th": {"weight": Pango.Weight.BOLD},
+    "row": {
+        "wrap_mode": Gtk.WrapMode.NONE,
+        "pixels_above_lines": 2,
+        "pixels_below_lines": 2,
+    },
     "space": {"pixels_below_lines": BLOCK_SPACE},
     "link": {"underline": Pango.Underline.SINGLE},
 }
@@ -88,6 +101,13 @@ RULE_CSS = b"separator { background-color: alpha(@theme_fg_color, 0.35); }"
 LINE_SEPARATOR = "\u2028"
 # The most pixels of a picture: a larger one stays its text.
 PICTURE_PIXELS = 32_000_000
+# Where a cell is, by how its column aligns: the tab stop before it, from
+# where the column starts and how wide it is.
+TAB_STOPS = {
+    "left": (Pango.TabAlign.LEFT, 0.0),
+    "center": (Pango.TabAlign.CENTER, 0.5),
+    "right": (Pango.TabAlign.RIGHT, 1.0),
+}
 
 
 @dataclasses.dataclass
@@ -103,6 +123,22 @@ class Run:
     picture: str | None = None
 
 
+@dataclasses.dataclass(eq=False)
+class Table:
+    """A table: how each column aligns, left, center or right."""
+
+    aligns: list[str] = dataclasses.field(default_factory=list)
+
+
+def after_tab(table: Table, column: int) -> bool:
+    """
+    If a cell comes after a tab: all but the first, unless it's aligned
+    left, as Pango skips a tab stop at the start of a line.
+    """
+
+    return column > 0 or table.aligns[0] != "left"
+
+
 @dataclasses.dataclass
 class Line:
     """A line of the README, as it's drawn."""
@@ -115,9 +151,19 @@ class Line:
     # the styles of the whole line: a heading, code, a quote, the space below
     styles: tuple[str, ...] = ()
     rule: bool = False
+    # a row of a table: the runs of each cell, in place of runs
+    cells: list[list[Run]] | None = None
+    # the table of a row, or of the rule under its header
+    table: Table | None = None
 
     @property
     def text(self) -> str:
+        """The text; the cells of a row with a tab between them."""
+
+        if self.cells is not None:
+            return "\t".join(
+                "".join(run.text for run in cell) for cell in self.cells
+            )
         return "".join(run.text for run in self.runs)
 
 
@@ -139,6 +185,10 @@ class _Layout:
         self.heading: str | None = None
         # the marker of the list item whose first line is still to come
         self.marker: str | None = None
+        # the table being read, the cells of its row, if it's the header
+        self.table: Table | None = None
+        self.cells: list[list[Run]] | None = None
+        self.header = False
 
     def run(self, tokens: Sequence[Token]) -> list[Line]:
         for token in tokens:
@@ -148,14 +198,22 @@ class _Layout:
         return self.lines
 
     def add_line(
-        self, runs: list[Run], styles: tuple[str, ...] = (), rule: bool = False
+        self,
+        runs: list[Run],
+        styles: tuple[str, ...] = (),
+        rule: bool = False,
+        cells: list[list[Run]] | None = None,
     ) -> None:
         if self.quotes:
             styles = (*styles, "quote")
         if self.heading is not None:
             styles = (*styles, self.heading)
+        if self.table is not None:
+            styles = (*styles, "row")
         depth = len(self.lists) + self.quotes
-        self.lines.append(Line(runs, depth, self.marker, styles, rule))
+        self.lines.append(
+            Line(runs, depth, self.marker, styles, rule, cells, self.table)
+        )
         self.marker = None
 
     def end_block(self) -> None:
@@ -223,6 +281,38 @@ class _Layout:
         self.add_line([], rule=True)
         self.end_block()
 
+    def on_table_open(self, token: Token) -> None:
+        if self.marker is not None:
+            # the marker of the item on a line of its own: before a cell,
+            # it would push the cell out of its column
+            self.add_line([])
+        self.table = Table()
+
+    def on_table_close(self, token: Token) -> None:
+        self.table = None
+        self.end_block()
+
+    def on_thead_open(self, token: Token) -> None:
+        self.header = True
+
+    def on_thead_close(self, token: Token) -> None:
+        self.header = False
+        self.add_line([], rule=True)
+
+    def on_th_open(self, token: Token) -> None:
+        assert self.table is not None, "a header cell is in a table"
+        # markdown-it writes the alignment as a style, text-align:right
+        style = str(token.attrGet("style") or "")
+        self.table.aligns.append(style.partition("text-align:")[2] or "left")
+
+    def on_tr_open(self, token: Token) -> None:
+        self.cells = []
+
+    def on_tr_close(self, token: Token) -> None:
+        styles = ("th",) if self.header else ()
+        self.add_line([], styles, cells=self.cells)
+        self.cells = None
+
     # Text
 
     def on_inline(self, token: Token) -> None:
@@ -261,7 +351,10 @@ class _Layout:
                 text = plain_text(child.children or []) or child.content
                 # a picture without a text: its path, until it shows
                 add(text or path, "em", picture=path)
-        self.add_line(runs)
+        if self.cells is not None:
+            self.cells.append(runs)
+        else:
+            self.add_line(runs)
 
 
 def read_picture(data: bytes) -> GdkPixbuf.Pixbuf | None:
@@ -283,6 +376,19 @@ def read_picture(data: bytes) -> GdkPixbuf.Pixbuf | None:
     except GLib.Error:
         return None
     return loader.get_pixbuf()
+
+
+@dataclasses.dataclass
+class _Table:
+    """
+    A table of the view: the tag of its tab stops, its rows, and the rule
+    under its header.
+    """
+
+    name: str
+    tag: Gtk.TextTag
+    rows: list[Line] = dataclasses.field(default_factory=list)
+    rule: Gtk.Separator | None = None
 
 
 @dataclasses.dataclass
@@ -321,6 +427,10 @@ def open_link(widget: Gtk.Widget, uri: str) -> bool:
     return True
 
 
+def _markup_runs(runs: list[Run], links: bool) -> str:
+    return "".join(_markup_run(run, links) for run in runs)
+
+
 def _markup_run(run: Run, links: bool) -> str:
     text = GLib.markup_escape_text(run.text)
     for style, element in (
@@ -348,11 +458,13 @@ def pango_markup(text: str, links: bool = True) -> str:
     for line in layout(parse(text)):
         if line.rule:
             body = "―" * 6
+        elif line.cells is not None:
+            body = "\t".join(_markup_runs(cell, links) for cell in line.cells)
         else:
-            body = "".join(_markup_run(run, links) for run in line.runs)
+            body = _markup_runs(line.runs, links)
         if "pre" in line.styles:
             body = f"<tt>{body}</tt>"
-        if any(style in line.styles for style in ("h1", "h2", "h3")):
+        if any(style in line.styles for style in ("h1", "h2", "h3", "th")):
             body = f"<b>{body}</b>"
         if "quote" in line.styles:
             body = f"<i>{body}</i>"
@@ -485,6 +597,7 @@ class MarkdownView(Gtk.TextView):
         self._links: dict[str, str] = {}
         # the rules, and the left margin of each
         self._rules: list[tuple[Gtk.Separator, int]] = []
+        self._tables: dict[Table, _Table] = {}
         self._pictures: list[_Picture] = []
         # what each set_markdown() renders, for the pictures that come late
         self._rendering = 0
@@ -498,6 +611,19 @@ class MarkdownView(Gtk.TextView):
         self.connect("motion-notify-event", self.on_motion_notify_event)
         self.connect("size-allocate", self.on_size_allocate)
         self.connect("destroy", self.on_destroy)
+
+    def do_get_preferred_width(self) -> tuple[int, int]:
+        """
+        A table leaves out of the minimum width, as its rows don't wrap: in
+        a window that doesn't scroll the view, as the Projects window, it
+        would widen the window. A table wider than the view goes past its
+        edge, where the Readme tab scrolls to it.
+        """
+
+        minimum, natural = Gtk.TextView.do_get_preferred_width(self)
+        if self._tables:
+            minimum = min(minimum, self.get_left_margin() + 1)
+        return minimum, natural
 
     def _tag(self, name: str) -> Gtk.TextTag:
         """A tag that the view made: of a style, or of a link."""
@@ -538,18 +664,25 @@ class MarkdownView(Gtk.TextView):
             start = self.buffer.get_char_count()
             left = self.get_left_margin() + INDENT * line.depth
             if line.rule:
-                self._add_rule(left)
+                self._add_rule(left, line.table)
+            elif line.cells is not None:
+                self._add_cells(line, left)
             else:
-                self._add_runs(line, left, pictures is not None)
+                self._add_runs(
+                    line.runs, line.marker, left, pictures is not None
+                )
             if number < len(lines) - 1:
                 self.buffer.insert(self.buffer.get_end_iter(), "\n")
             names = (self._margin_tag(left, line.marker), *line.styles)
+            if line.table is not None:
+                names = (*names, self._table(line.table).name)
             for name in names:
                 self.buffer.apply_tag_by_name(
                     name,
                     self.buffer.get_iter_at_offset(start),
                     self.buffer.get_end_iter(),
                 )
+        self._fit_tables()
         # once the lines are there: a picture may come at once
         rendering = self._rendering
         if pictures is None:
@@ -565,23 +698,30 @@ class MarkdownView(Gtk.TextView):
     def _clear(self) -> None:
         self._rendering += 1
         self.buffer.set_text("")
-        table = self.buffer.get_tag_table()
+        tags = self.buffer.get_tag_table()
         for name in self._links:
-            table.remove(self._tag(name))
+            tags.remove(self._tag(name))
         self._links.clear()
         for separator, _left in self._rules:
             separator.destroy()
         self._rules.clear()
+        for shown in self._tables.values():
+            tags.remove(shown.tag)
+            if shown.rule is not None:
+                shown.rule.destroy()
+        self._tables.clear()
         for picture in self._pictures:
             if picture.image is not None:
                 picture.image.destroy()
         self._pictures.clear()
 
-    def _add_runs(self, line: Line, left: int, pictures: bool) -> None:
+    def _add_runs(
+        self, runs: list[Run], marker: str | None, left: int, pictures: bool
+    ) -> None:
         end = self.buffer.get_end_iter()
-        if line.marker is not None:
-            self.buffer.insert(end, line.marker + " ")
-        for run in line.runs:
+        if marker is not None:
+            self.buffer.insert(end, marker + " ")
+        for run in runs:
             names = list(run.styles)
             if run.href is not None:
                 name = f"link:{len(self._links)}"
@@ -595,15 +735,71 @@ class MarkdownView(Gtk.TextView):
                 )
             self.buffer.insert_with_tags_by_name(end, run.text, *names)
 
-    def _add_rule(self, left: int) -> None:
+    def _add_cells(self, line: Line, left: int) -> None:
+        """A row of a table; a picture in it stays its text."""
+
+        assert line.table is not None and line.cells is not None, "a row"
+        self._table(line.table).rows.append(line)
+        self._add_runs([], line.marker, left, False)
+        for column, cell in enumerate(line.cells):
+            if after_tab(line.table, column):
+                self.buffer.insert(self.buffer.get_end_iter(), "\t")
+            self._add_runs(cell, None, left, False)
+
+    def _add_rule(self, left: int, table: Table | None) -> None:
         anchor = self.buffer.create_child_anchor(self.buffer.get_end_iter())
         separator = Gtk.Separator(visible=True, valign=Gtk.Align.CENTER)
         separator.get_style_context().add_provider(
             self._rule_style, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
         )
         self.add_child_at_anchor(separator, anchor)
+        if table is not None:
+            # as wide as the table, once its cells are measured
+            self._table(table).rule = separator
+            return
         self._rules.append((separator, left))
         self._size_rule(separator, left, self.get_allocated_width())
+
+    # Tables
+
+    def _table(self, table: Table) -> _Table:
+        """The table in the view, with a tag of its own for its tab stops."""
+
+        shown = self._tables.get(table)
+        if shown is None:
+            name = f"table:{len(self._tables)}"
+            tag = self.buffer.create_tag(name)
+            shown = self._tables[table] = _Table(name, tag)
+        return shown
+
+    def _fit_tables(self) -> None:
+        """The tab stops of each table, from the widths of its cells."""
+
+        measure = self.create_pango_layout(None)
+        for table, shown in self._tables.items():
+            widths = [0] * len(table.aligns)
+            for row in shown.rows:
+                for column, cell in enumerate(row.cells or []):
+                    markup = _markup_runs(cell, False)
+                    if "th" in row.styles:
+                        markup = f"<b>{markup}</b>"
+                    measure.set_markup(markup, -1)
+                    width = measure.get_pixel_size()[0]
+                    widths[column] = max(widths[column], width)
+            stops: list[tuple[Pango.TabAlign, int]] = []
+            start = 0
+            for column, (align, width) in enumerate(zip(table.aligns, widths)):
+                if after_tab(table, column):
+                    kind, share = TAB_STOPS[align]
+                    # past the start of the line, or Pango skips it
+                    stops.append((kind, max(start + round(width * share), 1)))
+                start += width + COLUMN_SPACE
+            tabs = Pango.TabArray.new(len(stops), True)
+            for index, (kind, at) in enumerate(stops):
+                tabs.set_tab(index, kind, at)
+            shown.tag.props.tabs = tabs
+            if shown.rule is not None:
+                shown.rule.set_size_request(max(start - COLUMN_SPACE, 1), -1)
 
     def _margin_tag(self, left: int, marker: str | None) -> str:
         """The left margin of a line; a marker hangs in it, before the text."""
@@ -711,6 +907,8 @@ class MarkdownView(Gtk.TextView):
 
     def on_style_updated(self, view: Gtk.Widget) -> None:
         self.update_colors()
+        # another font: the cells take another room
+        self._fit_tables()
 
     def on_button_release_event(
         self, view: Gtk.Widget, event: Gdk.EventButton

@@ -564,7 +564,8 @@ Virtualbricks reads as Markdown. The Readme tab shows it rendered, and
 its pencil button edits the text; the details of the Projects window
 show it rendered too. The list of projects shows its first line, and the
 import window its first paragraph that isn't a heading. The syntax is a
-subset of CommonMark, the part that most editors and forges share:</p>
+subset of CommonMark, the part that most editors and forges share, with
+the tables of GitHub:</p>
 <dl>
 <dt><code># Title</code>, <code>## Title</code></dt>
 <dd>
@@ -595,6 +596,14 @@ it.
 <dd>
 A quote.
 </dd>
+<dt><code>| a | b |</code></dt>
+<dd>
+A row of a table. Under the first row, the header, a line with a
+<code>---</code> for each column, <code>|---|---|</code>, makes the
+lines a table. A <code>:</code> at the right end of a <code>---</code>
+aligns its column to the right, at both ends in the middle. The columns
+line up, and a row doesn't wrap; a picture in a cell shows as its text.
+</dd>
 <dt><code>[text](https://...)</code>,
 <code>&lt;https://...&gt;</code></dt>
 <dd>
@@ -623,8 +632,8 @@ A rule, between empty lines.
 A backslash before a mark keeps the mark: <code>\*</code> is a star.
 </dd>
 </dl>
-<p>Anything else shows as it's written: a table, HTML, a line indented
-by four spaces.</p>
+<p>Anything else shows as it's written: HTML, a line indented by four
+spaces.</p>
 <h2 id="brick-types">Brick types</h2>
 <h3 id="qemu">qemu</h3>
 <p>A QEMU virtual machine. Most keys become an option of the QEMU

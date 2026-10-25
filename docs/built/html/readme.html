@@ -39,7 +39,7 @@ question mark, <span class="gui">Syntax</span>, shows what the text can
 hold. A project without a README says so, and the pencil writes one.</p>
 <figure>
 <a href="figures/readme-edit.png"><img src="figures/readme-edit.png"
-alt="The Readme tab with the text of the README in the editor, and the eye and the question mark over the top right corner; the syntax open under the question mark: a heading, emphasis, code, a list, a quote, a link, a picture and a line across, and what each is." /></a>
+alt="The Readme tab with the text of the README in the editor, and the eye and the question mark over the top right corner; the syntax open under the question mark: a heading, emphasis, code, a list, a quote, a table, a link, a picture and a line across, and what each is." /></a>
 <figcaption>Writing the README</figcaption>
 </figure>
 <p>The editor is plain text, without colours. The README is saved at
@@ -49,9 +49,10 @@ time it shows: a README changed in another editor shows when you come
 back to the tab.</p>
 <h2 id="syntax">The syntax</h2>
 <p>The syntax is CommonMark, the Markdown that GitHub, GitLab and most
-editors share, but for what <a href="readme.html#limits">What it doesn't
-do</a> lists. The file stays as you wrote it: the marks show rendered
-only where the README is read.</p>
+editors share, with the tables of GitHub, but for what <a
+href="readme.html#limits">What it doesn't do</a> lists. The file stays
+as you wrote it: the marks show rendered only where the README is
+read.</p>
 <div class="terms">
 <p class="title">Blocks</p>
 <dl>
@@ -86,6 +87,11 @@ number, whatever the numbers after it: <code>3.</code>, then
 <dd>
 <p>A quote, in fainter text, indented. <code>&gt;&gt;</code> is a quote
 in a quote, and a quote can hold lists and code.</p>
+</dd>
+<dt><code>| a | b |</code></dt>
+<dd>
+<p>A row of a table, a line with a <code>|</code> before each cell and
+after the last; see <a href="readme.html#tables">Tables</a>.</p>
 </dd>
 <dt><code>```</code></dt>
 <dd>
@@ -147,6 +153,26 @@ never breaks.
 </dd>
 </dl>
 </div>
+<h2 id="tables">Tables</h2>
+<p>A table is a line for each row, with its cells between
+<code>|</code>. Under the first row, the header, a line with a
+<code>---</code> for each column makes the lines a table:</p>
+<pre><code>| Machine | Address    | Users |
+|---------|-----------:|:-----:|
+| vm1     | 10.0.0.1   | 2     |
+| router  | 10.0.0.254 | 0     |</code></pre>
+<p>The header is bold, with a line under it, and the columns line up
+whatever the spaces in the text. A <code>:</code> aligns the cells of a
+column: <code>---:</code> to the right, <code>:---:</code> in the
+middle, and <code>:---</code> or <code>---</code> to the left. A row
+with fewer cells than the header ends with empty ones, and the cells of
+a row past those of the header are left out.</p>
+<p>A cell holds emphasis, code and links, but a picture shows as its
+text, and a <code>|</code> in a cell is written <code>\|</code>. A row
+doesn't wrap: in the <span class="gui">Readme</span> tab, a table wider
+than the tab goes past its right edge, and the tab scrolls sideways to
+it; the Projects window cuts it at its edge. Copied, a row keeps a tab
+between its cells.</p>
 <h2 id="links">Links</h2>
 <p>A click on a link opens it: an <code>http</code> or
 <code>https</code> link in your browser, and a <code>mailto</code> link
@@ -215,8 +241,6 @@ project</a>.</p>
 <h2 id="limits">What it doesn't do</h2>
 <p>These show as you typed them, marks and all:</p>
 <ul>
-<li><p>a table, with its <code>|</code>: put it in a block of code,
-whose monospace font keeps its columns;</p></li>
 <li><p>HTML, as <code>&lt;b&gt;</code> or
 <code>&lt;br&gt;</code>;</p></li>
 <li><p>a link by reference, <code>[text][name]</code>, with
@@ -234,6 +258,7 @@ its spaces, not code: put code between lines of backquotes.</p></li>
 <li><p>A block of code has no colours, whatever its language.</p></li>
 <li><p>The title of a link or of a picture,
 <code>[text](https://example.org "Title")</code>, is left out.</p></li>
+<li><p>A picture in a table shows as its text.</p></li>
 <li><p>The headings below <code>##</code> are all of one size.</p></li>
 </ul>
 <h2 id="where">Where the README shows</h2>

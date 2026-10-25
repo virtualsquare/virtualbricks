@@ -22,14 +22,14 @@
     <figure>
       <title>Writing the README</title>
       <media type="image" mime="image/png" src="figures/readme-edit.png">
-        <p>The Readme tab with the text of the README in the editor, and the eye and the question mark over the top right corner; the syntax open under the question mark: a heading, emphasis, code, a list, a quote, a link, a picture and a line across, and what each is.</p>
+        <p>The Readme tab with the text of the README in the editor, and the eye and the question mark over the top right corner; the syntax open under the question mark: a heading, emphasis, code, a list, a quote, a table, a link, a picture and a line across, and what each is.</p>
       </media>
     </figure>
     <p>The editor is plain text, without colours. The README is saved at most 30 seconds after a change, and when you leave the tab, when the project is saved, and when you quit. The tab reads the file again each time it shows: a README changed in another editor shows when you come back to the tab.</p>
   </section>
   <section id="syntax">
     <title>The syntax</title>
-    <p>The syntax is CommonMark, the Markdown that GitHub, GitLab and most editors share, but for what <link xref="readme#limits"/> lists. The file stays as you wrote it: the marks show rendered only where the README is read.</p>
+    <p>The syntax is CommonMark, the Markdown that GitHub, GitLab and most editors share, with the tables of GitHub, but for what <link xref="readme#limits"/> lists. The file stays as you wrote it: the marks show rendered only where the README is read.</p>
     <terms>
       <title>Blocks</title>
       <item>
@@ -51,6 +51,10 @@
       <item>
         <title><code>&gt; quote</code></title>
         <p>A quote, in fainter text, indented. <code>&gt;&gt;</code> is a quote in a quote, and a quote can hold lists and code.</p>
+      </item>
+      <item>
+        <title><code>| a | b |</code></title>
+        <p>A row of a table, a line with a <code>|</code> before each cell and after the last; see <link xref="readme#tables"/>.</p>
       </item>
       <item>
         <title><code>```</code></title>
@@ -96,6 +100,16 @@
         <p>An entity of HTML is its character: <code>&amp;copy;</code> is ©, <code>&amp;amp;</code> is &amp;, <code>&amp;nbsp;</code> a space that never breaks.</p>
       </item>
     </terms>
+  </section>
+  <section id="tables">
+    <title>Tables</title>
+    <p>A table is a line for each row, with its cells between <code>|</code>. Under the first row, the header, a line with a <code>---</code> for each column makes the lines a table:</p>
+    <screen>| Machine | Address    | Users |
+|---------|-----------:|:-----:|
+| vm1     | 10.0.0.1   | 2     |
+| router  | 10.0.0.254 | 0     |</screen>
+    <p>The header is bold, with a line under it, and the columns line up whatever the spaces in the text. A <code>:</code> aligns the cells of a column: <code>---:</code> to the right, <code>:---:</code> in the middle, and <code>:---</code> or <code>---</code> to the left. A row with fewer cells than the header ends with empty ones, and the cells of a row past those of the header are left out.</p>
+    <p>A cell holds emphasis, code and links, but a picture shows as its text, and a <code>|</code> in a cell is written <code>\|</code>. A row doesn't wrap: in the <gui>Readme</gui> tab, a table wider than the tab goes past its right edge, and the tab scrolls sideways to it; the Projects window cuts it at its edge. Copied, a row keeps a tab between its cells.</p>
   </section>
   <section id="links">
     <title>Links</title>
@@ -149,9 +163,6 @@
     <p>These show as you typed them, marks and all:</p>
     <list>
       <item>
-        <p>a table, with its <code>|</code>: put it in a block of code, whose monospace font keeps its columns;</p>
-      </item>
-      <item>
         <p>HTML, as <code>&lt;b&gt;</code> or <code>&lt;br&gt;</code>;</p>
       </item>
       <item>
@@ -174,6 +185,9 @@
       </item>
       <item>
         <p>The title of a link or of a picture, <code>[text](https://example.org "Title")</code>, is left out.</p>
+      </item>
+      <item>
+        <p>A picture in a table shows as its text.</p>
       </item>
       <item>
         <p>The headings below <code>##</code> are all of one size.</p>

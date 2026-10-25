@@ -29,6 +29,7 @@ if has_display:
 
     from virtualbricks.gui import markdownview
     from virtualbricks.gui.markdownview import (
+        COLUMN_SPACE,
         INDENT,
         LINE_SEPARATOR,
         MarkdownLabel,
@@ -215,6 +216,55 @@ class TestLayout(GtkTestCase):
         self.assertEqual([line.rule for line in lines], [False, True, False])
         self.assertIn("space", lines[1].styles)
 
+    def test_tables(self):
+        lines = lines_of("| a | *b* |\n|:-:|--:|\n| 1 | `2` |\n| 3 |\n\nafter")
+        self.assertEqual(
+            [(line.text, line.styles, line.rule) for line in lines],
+            [
+                ("a\tb", ("th", "row"), False),
+                # the rule under the header
+                ("", ("row",), True),
+                ("1\t2", ("row",), False),
+                # a row short of a cell
+                ("3\t", ("row", "space"), False),
+                ("after", ("space",), False),
+            ],
+        )
+        table = lines[0].table
+        self.assertEqual(table.aligns, ["center", "right"])
+        self.assertTrue(all(line.table is table for line in lines[:4]))
+        self.assertIsNone(lines[4].table)
+        self.assertEqual(
+            [[(r.text, r.styles) for r in cell] for cell in lines[2].cells],
+            [[("1", ())], [("2", ("code",))]],
+        )
+        self.assertEqual(lines[0].cells[1][0].styles, ("em",))
+        self.assertEqual(lines_of("| a |\n|---|")[0].table.aligns, ["left"])
+
+    def test_a_table_in_a_list_or_a_quote(self):
+        lines = lines_of("- | a |\n  |---|\n  | 1 |\n\n> | q |\n> |---|")
+        self.assertEqual(
+            [
+                (
+                    line.marker,
+                    line.depth,
+                    line.text,
+                    line.table is not None,
+                    "quote" in line.styles,
+                )
+                for line in lines
+            ],
+            [
+                # the marker on a line of its own
+                ("•", 1, "", False, False),
+                (None, 1, "a", True, False),
+                (None, 1, "", True, False),
+                (None, 1, "1", True, False),
+                (None, 1, "q", True, True),
+                (None, 1, "", True, True),
+            ],
+        )
+
 
 class TestPangoMarkup(GtkTestCase):
 
@@ -248,6 +298,12 @@ class TestPangoMarkup(GtkTestCase):
     def test_pictures_are_their_text(self):
         self.assertEqual(pango_markup("![the map](m.png)"), "<i>the map</i>")
         self.assertEqual(pango_markup("![](m.png)"), "<i>m.png</i>")
+
+    def test_tables(self):
+        self.assertEqual(
+            pango_markup("| a | *b* |\n|---|--:|\n| 1 | 2 |\n\nafter"),
+            "<b>a\t<i>b</i></b>\n――――――\n1\t2\n\nafter",
+        )
 
     def test_without_links(self):
         self.assertEqual(
@@ -615,6 +671,158 @@ class TestMarkdownView(ViewTestCase):
         )
         self.view.emit("style-updated")
         self.assertEqual(updates, [1])
+
+
+class TestTables(ViewTestCase):
+
+    TABLE = (
+        "| one | two | three | four |\n"
+        "|---|--:|:-:|---|\n"
+        "| a long first cell | 2 | 3 | 4 |\n"
+        "| x | a wide second | a wide third | y |"
+    )
+
+    def extent(self, needle):
+        """Where a text starts and ends, in pixels."""
+
+        start = self.iter_at(needle)
+        last = start.copy()
+        last.forward_chars(len(needle) - 1)
+        first = self.view.get_iter_location(start)
+        end = self.view.get_iter_location(last)
+        return first.x, end.x + end.width
+
+    def middle(self, needle):
+        start, end = self.extent(needle)
+        return (start + end) / 2
+
+    def test_text(self):
+        self.show(self.TABLE)
+        self.assertEqual(
+            self.text(),
+            "one\ttwo\tthree\tfour\n"
+            # the rule under the header
+            "\ufffc\n"
+            "a long first cell\t2\t3\t4\n"
+            "x\ta wide second\ta wide third\ty",
+        )
+        self.assertIn("th", self.tags_at("one"))
+        self.assertNotIn("th", self.tags_at("long"))
+        self.assertIn("row", self.tags_at("long"))
+
+    def test_the_columns_line_up(self):
+        self.show(self.TABLE)
+        right = [
+            self.extent(cell)[1] for cell in ("two", "2", "a wide second")
+        ]
+        self.assertEqual(len(set(right)), 1, right)
+        center = self.middle("three")
+        for cell in ("3", "a wide third"):
+            self.assertLessEqual(abs(self.middle(cell) - center), 1)
+        left = [self.extent(cell)[0] for cell in ("four", "4", "y")]
+        self.assertEqual(len(set(left)), 1, left)
+        # the widest cell of a column and the next column: the room between
+        for before, after in (
+            ("a long first cell", "a wide second"),
+            ("a wide second", "a wide third"),
+            ("a wide third", "four"),
+        ):
+            self.assertEqual(
+                self.extent(after)[0] - self.extent(before)[1], COLUMN_SPACE
+            )
+
+    def test_the_first_column_aligned_right(self):
+        self.show("| n |\n|--:|\n| 100 |\n| 7 |")
+        # a tab stop at the start of a line would be skipped: a tab before
+        # the cell, and a stop past the start
+        self.assertEqual(self.text(), "\tn\n\ufffc\n\t100\n\t7")
+        ends = [self.extent(cell)[1] for cell in ("n", "100", "7")]
+        self.assertEqual(len(set(ends)), 1, ends)
+
+    def test_an_empty_column(self):
+        self.show("| | b |\n|--:|---|\n| | c |")
+        self.assertEqual(self.text(), "\t\tb\n\ufffc\n\t\tc")
+        self.assertEqual(self.extent("b")[0], self.extent("c")[0])
+        self.assertEqual(
+            self.extent("b")[0] - self.view.get_left_margin(), COLUMN_SPACE
+        )
+
+    def test_each_table_has_its_columns(self):
+        self.show(
+            "| a | b |\n|---|---|\n| a long row | z |\n\n"
+            "| d | e |\n|---|---|"
+        )
+        self.assertEqual(self.extent("b")[0], self.extent("z")[0])
+        self.assertLess(self.extent("e")[0], self.extent("b")[0])
+
+    def test_links_in_a_cell(self):
+        self.show("| [BIRD](https://bird.network.cz) |\n|---|")
+        self.assertEqual(
+            self.view.link_at(self.iter_at("BIRD")), "https://bird.network.cz"
+        )
+
+    def test_the_rule_is_as_wide_as_the_table(self):
+        self.show(self.TABLE)
+        [rule] = self.view.get_children()
+        self.assertIsInstance(rule, Gtk.Separator)
+        start = self.extent("one")[0]
+        end = max(self.extent(cell)[1] for cell in ("four", "4", "y"))
+        self.assertEqual(rule.get_size_request()[0], end - start)
+        # not as wide as the view
+        allocation = Gdk.Rectangle()
+        allocation.width, allocation.height = 600, 300
+        self.view.size_allocate(allocation)
+        self.assertEqual(rule.get_size_request()[0], end - start)
+
+    def test_a_new_text_drops_the_tables(self):
+        self.show(self.TABLE)
+        self.show("no table")
+        self.assertEqual(self.view.get_children(), [])
+        names = []
+        self.buffer.get_tag_table().foreach(
+            lambda tag, *data: names.append(tag.props.name)
+        )
+        self.assertEqual([n for n in names if n.startswith("table:")], [])
+
+    def test_another_font(self):
+        self.show(self.TABLE)
+        before = self.extent("a wide second")[0]
+        style = Gtk.CssProvider()
+        style.load_from_data(b"textview { font-size: 30px; }")
+        self.view.get_style_context().add_provider(
+            style, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
+        self.view.emit("style-updated")
+        self.pump()
+        self.assertGreater(self.extent("a wide second")[0], before)
+        right = [
+            self.extent(cell)[1] for cell in ("two", "2", "a wide second")
+        ]
+        self.assertEqual(len(set(right)), 1, right)
+
+    def test_pictures_stay_their_text(self):
+        asked = []
+        self.show("| ![the map](map.png) |\n|---|", asked.append)
+        self.assertEqual(asked, [])
+        self.assertEqual(self.text(), "the map\n\ufffc")
+
+    def test_a_row_doesnt_wrap(self):
+        cells = [f"cell{n}" for n in range(30)]
+        self.show(f"| {' | '.join(cells)} |\n" + "|---" * 30 + "|")
+        first = self.view.get_iter_location(self.iter_at("cell0"))
+        last = self.view.get_iter_location(self.iter_at("cell29"))
+        self.assertEqual(first.y, last.y)
+        self.assertGreater(last.x, self.view.get_allocated_width())
+
+    def test_a_table_leaves_out_of_the_minimum_width(self):
+        self.show("| " + "wide " * 100 + "|\n|---|")
+        minimum, natural = self.view.get_preferred_width()
+        self.assertLessEqual(minimum, self.view.get_left_margin() + 1)
+        self.assertGreater(natural, 1000)
+        # without a table, as GTK says
+        self.show("wide " * 100)
+        minimum, natural = self.view.get_preferred_width()
+        self.assertEqual(minimum, natural)
 
 
 class TestPictures(ViewTestCase):
