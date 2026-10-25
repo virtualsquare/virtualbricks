@@ -146,11 +146,11 @@ class TestReadingAnEvent(EditorTestCase):
         self.assertFalse(separator(model, model.get_iter(0)))
 
     def test_the_bricks_and_the_events(self):
-        # an event doesn't start itself
+        # the event itself too: it runs again after each wait
         editor = self.edit(5, vb("sw1 on"), vb("boot on"))
         brick, event = editor.action_rows()
         self.assertEqual(self.choices(brick), ["sw1", "sw2"])
-        self.assertEqual(self.choices(event), ["boot"])
+        self.assertEqual(self.choices(event), ["boot", "start-lab"])
 
     def test_a_missing_brick(self):
         editor = self.edit(5, vb("vm9 on"))
@@ -161,7 +161,7 @@ class TestReadingAnEvent(EditorTestCase):
         self.assertEqual(commands(self.event), ["start vm9"])
 
     def test_the_event_itself(self):
-        # not missing, but not a choice either
+        # a choice as the others, not a missing one
         editor = self.edit(5, vb("start-lab off"))
         [row] = editor.action_rows()
         self.assertEqual(row.kind, Kind.STOP_EVENT)
@@ -290,7 +290,7 @@ class TestChangingAnAction(EditorTestCase):
         editor = self.edit(5, vb("sw2 on"))
         [row] = editor.action_rows()
         row.kind_combo.set_active_id("start-event")
-        self.assertEqual(self.choices(row), ["boot"])
+        self.assertEqual(self.choices(row), ["boot", "start-lab"])
         self.assertEqual(self.subject(row), "boot")
 
     def test_to_a_command(self):
@@ -319,15 +319,15 @@ class TestChangingAnAction(EditorTestCase):
             ['shell "sw2 config ports=4"'],
         )
 
-    def test_no_event_to_choose(self):
+    def test_only_the_event_itself(self):
+        # to choose, without another event
         self.factory.remove_event(self.boot)
         editor = self.edit(5, vb("sw1 on"))
         [row] = editor.action_rows()
         row.kind_combo.set_active_id("start-event")
-        self.assertEqual(self.choices(row), [])
-        self.assertIsNone(row.action())
+        self.assertEqual(self.choices(row), ["start-lab"])
         self.ok(editor)
-        self.assertEqual(commands(self.event), [])
+        self.assertEqual(commands(self.event), ["start start-lab"])
 
 
 class TestTheSubjectAlone(EditorTestCase):

@@ -231,11 +231,10 @@ class EventEditor(Panel):
     def build(self, form: Form) -> Gtk.Box:
         event = self.draft.brick
         factory = event.factory
+        # an event that starts itself runs again after each wait
         self.choices = {
             BRICK: [brick.name for brick in factory.bricks],
-            EVENT: [
-                other.name for other in factory.events if other is not event
-            ],
+            EVENT: [other.name for other in factory.events],
         }
         self.panel = Gtk.Box(
             visible=True, orientation=Gtk.Orientation.VERTICAL, spacing=GAP
