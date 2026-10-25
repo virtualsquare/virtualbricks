@@ -636,7 +636,7 @@ distribution from it and runs lintian, without installing it.
   `targetsuite.py`.
 - `website/`: the site, <https://www.virtualbricks.it>, built with Pelican:
   its news and pages in `content/`, and the user guide of `docs/built/html`,
-  which a plugin copies into it; `website/README.rst` tells how to build
+  which a plugin copies into it; `website/README.md` tells how to build
   and publish it.
 - `locale/`: the translations; `share/`: the desktop file and the icon.
 
