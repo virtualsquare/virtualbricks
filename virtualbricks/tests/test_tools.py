@@ -695,36 +695,37 @@ class TestDebPackage(unittest.TestCase):
         return self.tool.debian_version(version)
 
     def test_debian_version(self):
-        """A tilde before a pre-release; the others as they are."""
+        """A tilde before a pre-release, two before a dev release; the others
+        as they are."""
         for version, debian in [
             ("3.0.0", "3.0.0"),
-            ("3.0.0.dev8", "3.0.0~dev8"),
+            ("3.0.0.dev8", "3.0.0~~dev8"),
             ("3.0.0a1", "3.0.0~a1"),
             ("3.0.0b2", "3.0.0~b2"),
             ("3.0.0rc1", "3.0.0~rc1"),
-            ("3.0.0rc1.dev2", "3.0.0~rc1~dev2"),
+            ("3.0.0rc1.dev2", "3.0.0~rc1~~dev2"),
             ("3.0.0.post1", "3.0.0.post1"),
+            ("3.0.0.post1.dev2", "3.0.0.post1~~dev2"),
         ]:
             self.assertEqual(self.debian(version), debian)
 
     def test_debian_versions_in_order(self):
-        """dpkg puts them in the order of Python; but a dev release after
-        the alphas and the betas."""
+        """dpkg puts them in the order of Python."""
         if shutil.which("dpkg") is None:
             raise unittest.SkipTest("dpkg")
-        pairs = []
-        for versions in (
-            [
-                "3.0.0.dev8",
-                "3.0.0rc1.dev2",
-                "3.0.0rc1",
-                "3.0.0",
-                "3.0.0.post1",
-            ],
-            ["3.0.0a1", "3.0.0b2", "3.0.0rc1"],
-        ):
-            pairs += zip(versions, versions[1:])
-        for older, newer in pairs:
+        versions = [
+            "3.0.0.dev8",
+            "3.0.0.dev10",
+            "3.0.0a1.dev2",
+            "3.0.0a1",
+            "3.0.0b2",
+            "3.0.0rc1.dev2",
+            "3.0.0rc1",
+            "3.0.0",
+            "3.0.0.post1.dev2",
+            "3.0.0.post1",
+        ]
+        for older, newer in zip(versions, versions[1:]):
             subprocess.run(
                 [
                     "dpkg",
@@ -909,7 +910,7 @@ class TestDebPackage(unittest.TestCase):
             ("/out/x/y", "/b/x/y"),
             ("/in/x", "/a/x"),
             ("/outside", "/outside"),
-            ("3.0.0~dev8", "3.0.0~dev8"),
+            ("3.0.0~~dev8", "3.0.0~~dev8"),
         ]:
             self.assertEqual(self.tool.on_host(arg, volumes), path)
 
@@ -1055,9 +1056,9 @@ class TestDebPackage(unittest.TestCase):
 
     def uploaded(self, *codenames):
         """The files of the uploads of codenames."""
-        names = ["virtualbricks_3.0.0~dev8.orig.tar.gz"]
+        names = ["virtualbricks_3.0.0~~dev8.orig.tar.gz"]
         for codename in codenames:
-            version = f"3.0.0~dev8-0~{codename}1"
+            version = f"3.0.0~~dev8-0~{codename}1"
             names += [
                 f"virtualbricks_{version}.debian.tar.xz",
                 f"virtualbricks_{version}.dsc",
@@ -1081,7 +1082,7 @@ class TestDebPackage(unittest.TestCase):
                     trixie,
                     "build",
                     [f"/sdist/{SDIST}", "/debian", "/out"]
-                    + ["3.0.0~dev8", "3.0.0~dev8-0~trixie1", "trixie"],
+                    + ["3.0.0~~dev8", "3.0.0~~dev8-0~trixie1", "trixie"],
                 ),
                 (False, trixie, "install", ["/debs", "CHECK"]),
             ],
@@ -1089,7 +1090,7 @@ class TestDebPackage(unittest.TestCase):
         self.assertEqual(
             lines,
             [
-                "debian-13: virtualbricks 3.0.0~dev8-0~trixie1",
+                "debian-13: virtualbricks 3.0.0~~dev8-0~trixie1",
                 "  lintian: nothing",
                 "  the package: a switch made, the windows open",
                 f"the packages: {self.out}",
@@ -1135,7 +1136,7 @@ class TestDebPackage(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertEqual(
             self.signs,
-            [("KEY", "virtualbricks_3.0.0~dev8-0~trixie1_amd64.changes")],
+            [("KEY", "virtualbricks_3.0.0~~dev8-0~trixie1_amd64.changes")],
         )
         self.assertEqual(lines[-2], "  the signature: good, KEY")
         self.assertEqual(sorted(os.listdir(self.out)), self.uploaded("trixie"))
@@ -1161,7 +1162,7 @@ class TestDebPackage(unittest.TestCase):
             tmp,
             "  lintian: nothing",
             "  the package: a switch made, the windows open",
-            "  the signature: bad on virtualbricks_3.0.0~dev8-0~trixie1.dsc:"
+            "  the signature: bad on virtualbricks_3.0.0~~dev8-0~trixie1.dsc:"
             " gpgv.log",
         )
 
@@ -1312,14 +1313,14 @@ class TestDebPackage(unittest.TestCase):
                     noble,
                     "build",
                     [f"/sdist/{SDIST}", "/debian", "/out"]
-                    + ["3.0.0~dev8", "3.0.0~dev8-0~noble1", "noble"],
+                    + ["3.0.0~~dev8", "3.0.0~~dev8-0~noble1", "noble"],
                 ),
             ],
         )
         self.assertEqual(
             lines,
             [
-                "ubuntu-24.04: virtualbricks 3.0.0~dev8-0~noble1",
+                "ubuntu-24.04: virtualbricks 3.0.0~~dev8-0~noble1",
                 "  lintian: nothing",
                 f"the packages: {self.out}",
             ],

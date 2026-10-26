@@ -28,13 +28,13 @@ distribution, as the pipeline of GitLab builds them:
 The upstream tarball is the sdist of the files that Git tracks, as they are
 in the folder, edits and all: one, the same for every distribution. The
 debian/ folder is the one of the checkout: --debian names another. Each
-distribution builds the package, as virtualbricks_3.0.0~dev8-0~trixie1: the
-version of Virtualbricks, where a pre-release comes before its release. Then
-its lintian checks the upload, and an error or a warning fails it; a new
-container installs the package with what it depends on, an empty package in
-place of vde-netemu, which the distributions don't have; as a user that isn't
-root, the console makes a switch, and the windows are still open after 15 s
-under xvfb.
+distribution builds the package, as virtualbricks_3.0.0~~dev8-0~trixie1:
+the version of Virtualbricks, where a pre-release comes before its release,
+and a dev release before the pre-releases. Then its lintian checks the
+upload, and an error or a warning fails it; a new container installs the
+package with what it depends on, an empty package in place of vde-netemu,
+which the distributions don't have; as a user that isn't root, the console
+makes a switch, and the windows are still open after 15 s under xvfb.
 
 With --key, debsign signs the .changes, the .dsc and the .buildinfo here,
 with the key of gpg, which never goes in a container, and gpgv checks the
@@ -211,11 +211,12 @@ class Result(NamedTuple):
 
 def debian_version(version: str) -> str:
     """The upstream version of Debian of a version of Python: a pre-release
-    with a tilde, which comes before what has nothing after it. As in the
-    pipeline, whose versions are the same: Debian puts 3.0.0.dev8 after
-    3.0.0a1 and 3.0.0b1, not before them."""
+    with a tilde, which comes before what has nothing after it, and a dev
+    release with two, which come before one: 3.0.0~~dev8 before 3.0.0~a1,
+    as in Python. As in the pipeline, whose versions are the same."""
 
-    return re.sub(r"\.?(dev|a|b|rc)(\d+)", r"~\1\2", version)
+    version = re.sub(r"\.?(a|b|rc)(\d+)", r"~\1\2", version)
+    return re.sub(r"\.?dev(\d+)", r"~~dev\1", version)
 
 
 def sdist_version(path: str) -> str:
