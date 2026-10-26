@@ -945,11 +945,13 @@ class TestDebPackage(unittest.TestCase):
         bad=(),
         pointer=False,
         root=False,
+        uploads=(),
     ):
         """main(argv): its code, stdout, stderr and the temporary folder;
         the steps in self.calls, as (here, image, step, args), debsign in
         self.signs. sdist, build and install are the exit statuses of the
-        steps, install by image if a dict; lintian is a warning it says."""
+        steps, install by image if a dict; lintian is a warning it says;
+        uploads, the files in out before."""
         repo = os.path.join(self.folder, "repo")
         make_repo(repo)
         if pointer:
@@ -1033,15 +1035,24 @@ class TestDebPackage(unittest.TestCase):
             return install
 
         def sign(key, changes, log):
-            self.assertEqual(os.path.dirname(log), os.path.dirname(changes))
+            # the logs in the temporary folder, never in out
+            self.assertTrue(log.startswith(tmp + os.sep))
             self.signs.append((key, os.path.basename(changes)))
             return signs
 
         def signatures(key, paths, folder):
+            self.assertTrue(folder.startswith(tmp + os.sep))
+            version = os.path.basename(paths[0]).split("_")[1]
             self.assertEqual(
-                [os.path.splitext(path)[1] for path in paths],
-                [".changes", ".dsc", ".buildinfo"],
+                [os.path.basename(path) for path in paths],
+                [
+                    f"virtualbricks_{version}_amd64.changes",
+                    f"virtualbricks_{version}.dsc",
+                    f"virtualbricks_{version}_amd64.buildinfo",
+                ],
             )
+            for path in paths:
+                self.assertTrue(os.path.isfile(path))
             return [path for path in paths if path.endswith(bad)]
 
         self.patch(self.tool, "run", run)
@@ -1049,6 +1060,10 @@ class TestDebPackage(unittest.TestCase):
         self.patch(self.tool, "signatures", signatures)
         self.patch(self.tool, "has_secret_key", lambda key: key in keys)
         self.out = os.path.join(self.folder, "out")
+        if uploads:
+            os.makedirs(self.out)
+            for name in uploads:
+                write(self.out, name, name)
         out, err = io.StringIO(), io.StringIO()
         with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
             code = self.tool.main(list(argv) + ["--out", self.out])
@@ -1094,6 +1109,8 @@ class TestDebPackage(unittest.TestCase):
                 "  lintian: nothing",
                 "  the package: a switch made, the windows open",
                 f"the packages: {self.out}",
+                "they are unsigned: tools/debpackage.py --sign --key KEYID"
+                " signs them",
             ],
         )
         self.assertEqual(err, "making the sdist\nbuilding on debian-13\n")
@@ -1109,7 +1126,7 @@ class TestDebPackage(unittest.TestCase):
             [step for _, _, step, _ in self.calls].count("sdist"), 1
         )
         self.assertEqual(
-            [line.split(":")[0] for line in lines if line[0] != " "][:-1],
+            [line.split(":")[0] for line in lines if line[0] != " "][:-2],
             list(self.tool.TARGETS),
         )
         codenames = [target.codename for target in self.tool.TARGETS.values()]
@@ -1139,6 +1156,7 @@ class TestDebPackage(unittest.TestCase):
             [("KEY", "virtualbricks_3.0.0~~dev8-0~trixie1_amd64.changes")],
         )
         self.assertEqual(lines[-2], "  the signature: good, KEY")
+        self.assertEqual(lines[-1], f"the packages: {self.out}")
         self.assertEqual(sorted(os.listdir(self.out)), self.uploaded("trixie"))
 
     def assertFailed(self, code, lines, tmp, *expected):
@@ -1232,7 +1250,8 @@ class TestDebPackage(unittest.TestCase):
             install={trixie: self.tool.NO_CONSOLE},
         )
         self.assertEqual(code, 1)
-        self.assertEqual(lines[-1], f"the packages that passed: {self.out}")
+        self.assertEqual(lines[-2], f"the packages that passed: {self.out}")
+        self.assertTrue(lines[-1].startswith("they are unsigned: "))
         self.assertEqual(sorted(os.listdir(self.out)), self.uploaded("noble"))
 
     def test_main_without_lfs_pictures(self):
@@ -1255,6 +1274,110 @@ class TestDebPackage(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertEqual(lines[0], "the sdist failed (1): sdist.log")
         self.assertEqual(len(self.calls), 1)
+
+    def test_sign(self):
+        """Nothing built, no podman: the uploads in out signed, in the order
+        of TARGETS, and checked; in out, nothing more."""
+        uploads = self.uploaded("noble", "trixie")
+        code, lines, err, tmp = self.main(
+            "--sign",
+            "--key",
+            "KEY",
+            programs=("debsign", "gpgv"),
+            uploads=uploads,
+        )
+        self.assertEqual(code, 0)
+        self.assertEqual(self.calls, [])
+        self.assertEqual(
+            self.signs,
+            [
+                ("KEY", "virtualbricks_3.0.0~~dev8-0~trixie1_amd64.changes"),
+                ("KEY", "virtualbricks_3.0.0~~dev8-0~noble1_amd64.changes"),
+            ],
+        )
+        self.assertEqual(
+            lines,
+            [
+                "debian-13: virtualbricks 3.0.0~~dev8-0~trixie1",
+                "  the signature: good, KEY",
+                "ubuntu-24.04: virtualbricks 3.0.0~~dev8-0~noble1",
+                "  the signature: good, KEY",
+                f"the packages: {self.out}",
+            ],
+        )
+        self.assertEqual(
+            err, "signing the uploads of debian-13, ubuntu-24.04\n"
+        )
+        self.assertEqual(sorted(os.listdir(self.out)), uploads)
+        self.assertEqual(os.listdir(tmp), [])
+
+    def test_sign_named(self):
+        """Only the uploads of the distributions named; of each, those of
+        every version."""
+        dev9 = [
+            name.replace("dev8", "dev9") for name in self.uploaded("noble")
+        ]
+        code, lines, err, tmp = self.main(
+            "--sign",
+            "--key",
+            "KEY",
+            "ubuntu-24.04",
+            uploads=self.uploaded("noble", "trixie") + dev9,
+        )
+        self.assertEqual(code, 0)
+        self.assertEqual(
+            self.signs,
+            [
+                ("KEY", "virtualbricks_3.0.0~~dev8-0~noble1_amd64.changes"),
+                ("KEY", "virtualbricks_3.0.0~~dev9-0~noble1_amd64.changes"),
+            ],
+        )
+
+    def assertSignFailed(self, lines, tmp, line, *others):
+        """The upload of debian-13 failed with line, its logs kept; others,
+        the lines after."""
+        [work] = os.listdir(tmp)
+        name = "virtualbricks_3.0.0~~dev8-0~trixie1_amd64"
+        folder = os.path.join(tmp, work, name)
+        self.assertEqual(
+            lines,
+            [
+                "debian-13: virtualbricks 3.0.0~~dev8-0~trixie1",
+                f"  the signature: {line}",
+                f"  the logs: {folder}",
+                *others,
+            ],
+        )
+        self.assertEqual(os.listdir(os.path.join(tmp, work)), [name])
+
+    def test_sign_with_a_bad_signature(self):
+        """The others signed all the same."""
+        code, lines, err, tmp = self.main(
+            "--sign",
+            "--key",
+            "KEY",
+            uploads=self.uploaded("trixie", "noble"),
+            bad="trixie1.dsc",
+        )
+        self.assertEqual(code, 1)
+        self.assertSignFailed(
+            lines,
+            tmp,
+            "bad on virtualbricks_3.0.0~~dev8-0~trixie1.dsc: gpgv.log",
+            "ubuntu-24.04: virtualbricks 3.0.0~~dev8-0~noble1",
+            "  the signature: good, KEY",
+        )
+
+    def test_sign_when_debsign_fails(self):
+        code, lines, err, tmp = self.main(
+            "--sign",
+            "--key",
+            "KEY",
+            uploads=self.uploaded("trixie"),
+            signs=False,
+        )
+        self.assertEqual(code, 1)
+        self.assertSignFailed(lines, tmp, "debsign failed: debsign.log")
 
     def test_here_sdist(self):
         """Of the checkout itself, in this system; in out, the sdist."""
@@ -1345,6 +1468,8 @@ class TestDebPackage(unittest.TestCase):
     def test_refused(self):
         """Nothing runs."""
         missing = os.path.join(self.folder, "missing.tar.gz")
+        out = os.path.join(self.folder, "out")
+        trixie = self.uploaded("trixie")
         for argv, kwargs, message in [
             (
                 ["ubuntu-22.04", "debian-13"],
@@ -1389,12 +1514,35 @@ class TestDebPackage(unittest.TestCase):
                 {"root": True},
                 "--here build takes one distribution and --sdist",
             ),
+            (["--sign"], {"uploads": trixie}, "--sign takes --key"),
+            (
+                ["--sign", "--key", "KEY", "--sdist", missing],
+                {"uploads": trixie},
+                "--sign takes no --here, no --sdist and no --debian",
+            ),
+            (["--sign", "--key", "KEY"], {}, f"no upload in {out}"),
+            (
+                ["--sign", "--key", "KEY", "debian-14", "debian-13"],
+                {"uploads": trixie},
+                f"no upload of debian-14 in {out}",
+            ),
+            (
+                ["--sign", "--key", "KEY"],
+                {"uploads": trixie, "programs": ("gpgv",)},
+                "debsign isn't installed",
+            ),
+            (
+                ["--sign", "--key", "OTHER"],
+                {"uploads": trixie},
+                "gpg has no secret key OTHER",
+            ),
         ]:
             shutil.rmtree(self.folder)
             os.makedirs(self.folder)
             code, lines, err, tmp = self.main(*argv, **kwargs)
             self.assertEqual((code, err), (2, message + "\n"))
             self.assertEqual(self.calls, [])
+            self.assertEqual(self.signs, [])
 
 
 def versions_table():

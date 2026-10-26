@@ -24,6 +24,7 @@ distribution, as the pipeline of GitLab builds them:
     python tools/debpackage.py                          every distribution
     python tools/debpackage.py debian-13 ubuntu-24.04
     python tools/debpackage.py --key KEYID              signed with KEYID
+    python tools/debpackage.py --sign --key KEYID       those built, signed
 
 The upstream tarball is the sdist of the files that Git tracks, as they are
 in the folder, edits and all: one, the same for every distribution. The
@@ -44,6 +45,12 @@ stays, with its logs and its files. The distributions build side by side;
 the exit status is 1 if one failed. It needs podman and the network, and
 debsign (devscripts) and gpgv for --key. --sdist gives the upstream tarball
 instead.
+
+With --sign and --key, nothing is built: debsign signs the uploads that are
+in --out, of the distributions named or of all of them, and gpgv checks
+them, as after a build with --key; a signature that is there already is
+replaced. It needs no podman. The logs of an upload that failed stay in a
+temporary folder.
 
 The pipeline runs the steps with --here, in the container of each job, as
 root, with no podman, and shows their output:
@@ -217,6 +224,13 @@ def debian_version(version: str) -> str:
 
     version = re.sub(r"\.?(a|b|rc)(\d+)", r"~\1\2", version)
     return re.sub(r"\.?dev(\d+)", r"~~dev\1", version)
+
+
+def package_version(upstream: str, codename: str) -> str:
+    """The version of the package of codename: before the -1 of a package
+    of the distribution itself."""
+
+    return f"{upstream}-0~{codename}1"
 
 
 def sdist_version(path: str) -> str:
@@ -406,7 +420,7 @@ def build(
     lintian says: its result, and if it was built."""
 
     image, codename = TARGETS[target]
-    version = f"{upstream}-0~{codename}1"
+    version = package_version(upstream, codename)
     folder = os.path.join(work, target)
     os.makedirs(folder)
     lines = [f"{target}: virtualbricks {version}"]
@@ -521,27 +535,67 @@ def signatures(key: str, paths: Sequence[str], folder: str) -> list[str]:
     return bad
 
 
+def sign_upload(key: str, changes: str, folder: str) -> tuple[bool, str]:
+    """The upload of changes signed with key and its signatures checked,
+    the logs in folder: if it is signed, and the line that says it."""
+
+    if not sign(key, changes, os.path.join(folder, "debsign.log")):
+        return False, "  the signature: debsign failed: debsign.log"
+    # virtualbricks_VERSION_ARCH.changes, with virtualbricks_VERSION.dsc and
+    # virtualbricks_VERSION_ARCH.buildinfo
+    stem = changes.removesuffix(".changes")
+    paths = [changes, f"{stem.rsplit('_', 1)[0]}.dsc", f"{stem}.buildinfo"]
+    bad = signatures(key, paths, folder)
+    if bad:
+        names = ", ".join(os.path.basename(path) for path in bad)
+        return False, f"  the signature: bad on {names}: gpgv.log"
+    return True, f"  the signature: good, {key}"
+
+
 def signed(key: str, result: Result) -> Result:
     """result, its upload signed with key and its signatures checked."""
 
     files = upload(result.folder)
     [changes] = [path for path in files if path.endswith(".changes")]
-    if not sign(key, changes, os.path.join(result.folder, "debsign.log")):
-        line = "  the signature: debsign failed: debsign.log"
-        return Result(False, result.lines + [line], result.folder)
-    paths = [
-        path
-        for suffix in (".changes", ".dsc", ".buildinfo")
-        for path in files
-        if path.endswith(suffix)
-    ]
-    bad = signatures(key, paths, result.folder)
-    if bad:
-        names = ", ".join(os.path.basename(path) for path in bad)
-        line = f"  the signature: bad on {names}: gpgv.log"
-        return Result(False, result.lines + [line], result.folder)
-    line = f"  the signature: good, {key}"
-    return Result(result.passed, result.lines + [line], result.folder)
+    good, line = sign_upload(key, changes, result.folder)
+    return Result(result.passed and good, result.lines + [line], result.folder)
+
+
+def changes_of(out: str, target: str) -> list[str]:
+    """The .changes of the uploads of target in out."""
+
+    name = f"virtualbricks_{package_version('*', TARGETS[target].codename)}"
+    return sorted(
+        glob.glob(os.path.join(glob.escape(out), f"{name}_*.changes"))
+    )
+
+
+def sign_uploads(key: str, targets: Sequence[str], out: str) -> int:
+    """--sign: the uploads of targets in out, signed with key one after the
+    other, as gpg may ask the passphrase; the logs of those that failed in a
+    temporary folder. The exit status."""
+
+    print(f"signing the uploads of {', '.join(targets)}", file=sys.stderr)
+    work = tempfile.mkdtemp(prefix="debpackage.")
+    passed = True
+    for target in targets:
+        for changes in changes_of(out, target):
+            name = os.path.basename(changes).removesuffix(".changes")
+            folder = os.path.join(work, name)
+            os.makedirs(folder)
+            good, line = sign_upload(key, changes, folder)
+            lines = [f"{target}: virtualbricks {name.split('_')[1]}", line]
+            if good:
+                shutil.rmtree(folder)
+            else:
+                lines.append(f"  the logs: {folder}")
+                passed = False
+            print("\n".join(lines), flush=True)
+    if not passed:
+        return 1
+    shutil.rmtree(work)
+    print(f"the packages: {out}")
+    return 0
 
 
 def has_secret_key(key: str) -> bool:
@@ -555,12 +609,42 @@ def has_secret_key(key: str) -> bool:
     )
 
 
-def refused(args: argparse.Namespace, debian: str) -> str | None:
-    """Why the arguments can't build, or None."""
+def key_refused(key: str) -> str | None:
+    """Why debsign can't sign with key, or gpgv check, or None."""
+
+    for program in ("debsign", "gpgv"):
+        if shutil.which(program) is None:
+            return f"{program} isn't installed"
+    if not has_secret_key(key):
+        return f"gpg has no secret key {key}"
+    return None
+
+
+def sign_refused(args: argparse.Namespace, out: str) -> str | None:
+    """Why --sign can't sign the uploads in out, or None."""
+
+    if args.key is None:
+        return "--sign takes --key"
+    if (args.here, args.sdist, args.debian) != (None, None, None):
+        return "--sign takes no --here, no --sdist and no --debian"
+    if not args.targets:
+        return f"no upload in {out}"
+    missing = [
+        target for target in args.targets if not changes_of(out, target)
+    ]
+    if missing:
+        return f"no upload of {', '.join(missing)} in {out}"
+    return key_refused(args.key)
+
+
+def refused(args: argparse.Namespace, debian: str, out: str) -> str | None:
+    """Why the arguments can't build, or sign with --sign, or None."""
 
     unknown = sorted(set(args.targets) - set(TARGETS))
     if unknown:
         return f"unknown distributions: {', '.join(unknown)}"
+    if args.sign:
+        return sign_refused(args, out)
     if args.here is None:
         if shutil.which("podman") is None:
             return "podman isn't installed"
@@ -577,11 +661,7 @@ def refused(args: argparse.Namespace, debian: str) -> str | None:
     if not os.path.exists(os.path.join(debian, "control")):
         return f"no control in {debian}"
     if args.key is not None:
-        for program in ("debsign", "gpgv"):
-            if shutil.which(program) is None:
-                return f"{program} isn't installed"
-        if not has_secret_key(args.key):
-            return f"gpg has no secret key {args.key}"
+        return key_refused(args.key)
     return None
 
 
@@ -602,6 +682,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         help="sign the uploads with this key of gpg (default: unsigned)",
     )
     parser.add_argument(
+        "--sign",
+        action="store_true",
+        help="build nothing: sign with --key the uploads in --out, of the"
+        " distributions or of all of them",
+    )
+    parser.add_argument(
         "--sdist",
         metavar="FILE",
         help="the upstream tarball (default: the sdist of the checkout)",
@@ -614,8 +700,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument(
         "--out",
         metavar="FOLDER",
-        help="where the packages that passed go (default: dist/debian;"
-        " for --here sdist, dist)",
+        help="where the packages that passed go, and those that --sign"
+        " signs (default: dist/debian; for --here sdist, dist)",
     )
     parser.add_argument(
         "--here",
@@ -626,15 +712,21 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
     here = args.here is not None
-    if not here:
-        args.targets = args.targets or list(TARGETS)
     debian = os.path.abspath(args.debian or os.path.join(ROOT, "debian"))
     folder = ["dist"] if args.here == "sdist" else ["dist", "debian"]
     out = os.path.abspath(args.out or os.path.join(ROOT, *folder))
-    reason = refused(args, debian)
+    if args.sign:
+        args.targets = args.targets or [
+            target for target in TARGETS if changes_of(out, target)
+        ]
+    elif not here:
+        args.targets = args.targets or list(TARGETS)
+    reason = refused(args, debian, out)
     if reason is not None:
         print(reason, file=sys.stderr)
         return 2
+    if args.sign:
+        return sign_uploads(args.key, args.targets, out)
     work = tempfile.mkdtemp(prefix="debpackage.")
     if args.sdist is not None:
         sdist = os.path.abspath(args.sdist)
@@ -677,13 +769,18 @@ def main(argv: Sequence[str] | None = None) -> int:
         else:
             result.lines.append(f"  the logs: {result.folder}")
         print("\n".join(result.lines), flush=True)
-    if all(result.passed for result in results):
+    passed = [result.passed for result in results]
+    if all(passed):
         shutil.rmtree(work)
         print(f"the packages: {out}")
-        return 0
-    if any(result.passed for result in results):
+    elif any(passed):
         print(f"the packages that passed: {out}")
-    return 1
+    if any(passed) and args.key is None and not here:
+        print(
+            "they are unsigned: tools/debpackage.py --sign --key KEYID"
+            " signs them"
+        )
+    return 0 if all(passed) else 1
 
 
 if __name__ == "__main__":

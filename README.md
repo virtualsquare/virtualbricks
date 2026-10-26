@@ -540,14 +540,17 @@ here, in containers:
 python tools/debpackage.py                  # every distribution
 python tools/debpackage.py debian-13 ubuntu-24.04
 python tools/debpackage.py --key KEYID      # signed with your key
+python tools/debpackage.py --sign --key KEYID   # those built before, signed
 ```
 
 The sdist of the files of the checkout is the upstream tarball, the same for
 every distribution. A container of each builds the package, its lintian
 checks it, and another container installs it, makes a switch in its console
 and opens its windows. With `--key`, debsign signs the uploads here, with your
-key of gpg, and gpgv checks them; without, they are unsigned. The packages
-that passed go to `dist/debian/`. `--debian` names another `debian/` folder.
+key of gpg, and gpgv checks them; without, they are unsigned, and dput
+refuses them. `--sign --key KEYID` builds nothing and signs the uploads that
+are in `dist/debian/` already, then checks them. The packages that passed go
+to `dist/debian/`. `--debian` names another `debian/` folder.
 It needs `podman` and the network. The pipeline runs the same steps with
 `--here`, as root in the container of each job: `--here sdist` makes the
 sdist, `--here build --sdist FILE DISTRIBUTION` builds the package of one
