@@ -199,8 +199,10 @@ as long halves every stay. Divide the period and the chances by the same
 number to change state at finer times and keep the same stays: 500 ms,
 with 2.5 % from <code class="sys">good</code> to <code
 class="sys">bad</code> and 0.5 % to <code class="sys">down</code>, keeps
-the 16.7 s of <code class="sys">good</code>. A state never lasts less
-than a period.</p>
+the 16.7 s of <code class="sys">good</code>. A state lasts at least a
+period, but for the draws at a start and at each <span
+class="gui">OK</span> (see <a href="netemu.html#running">While it
+runs</a>).</p>
 <p>A state whose column has no chance is never reached, unless it is the
 first, which the link starts in and never comes back to once it leaves.
 A new state, which <span class="gui">+</span> adds with no chances, is
@@ -259,7 +261,11 @@ it moves on by chance.</p>
 <h2 id="running">While it runs</h2>
 <p>The states, their values, the period and the chances change at once
 in a Netemu that runs; the ends when it starts again. Each start begins
-in the first state.</p>
+in the first state, and draws at once, as soon as the chain is in place:
+the link can leave the first state at the very start. <span
+class="gui">OK</span> sends the whole chain again to a Netemu that runs,
+which draws at once too and starts its periods anew: the next draw comes
+a period after the <span class="gui">OK</span>.</p>
 <section id="seealso" class="seealso">
 <h2>See also</h2>
 <div class="links">

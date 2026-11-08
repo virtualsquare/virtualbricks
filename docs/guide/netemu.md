@@ -153,7 +153,8 @@ The chances are for each period: with the same chances, a period half as long
 halves every stay. Divide the period and the chances by the same number to
 change state at finer times and keep the same stays: 500 ms, with 2.5 % from
 `good`{.sys} to `bad`{.sys} and 0.5 % to `down`{.sys}, keeps the 16.7 s of
-`good`{.sys}. A state never lasts less than a period.
+`good`{.sys}. A state lasts at least a period, but for the draws at a start and
+at each **OK** (see [](netemu#running)).
 
 A state whose column has no chance is never reached, unless it is the first,
 which the link starts in and never comes back to once it leaves. A new state,
@@ -214,4 +215,7 @@ on by chance.
 
 The states, their values, the period and the chances change at once in a
 Netemu that runs; the ends when it starts again. Each start begins in the first
-state.
+state, and draws at once, as soon as the chain is in place: the link can leave
+the first state at the very start. **OK** sends the whole chain again to a
+Netemu that runs, which draws at once too and starts its periods anew: the next
+draw comes a period after the **OK**.

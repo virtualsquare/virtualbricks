@@ -169,7 +169,7 @@
       </tbody>
     </table>
     <p>The share of the time is where the link is in the long run, whatever its first state, and it comes from the whole grid, not from a row alone. This link loses 6.6 % of its packets on average, almost all of them while down, but never 6.6 % at a time: none for seconds, then all of them for seconds. A Netemu with a single state and a loss of 6.6 % has the same average, with the losses spread evenly; the traffic tells them apart (see <link xref="netemu#traffic"/>).</p>
-    <p>The chances are for each period: with the same chances, a period half as long halves every stay. Divide the period and the chances by the same number to change state at finer times and keep the same stays: 500 ms, with 2.5 % from <sys>good</sys> to <sys>bad</sys> and 0.5 % to <sys>down</sys>, keeps the 16.7 s of <sys>good</sys>. A state never lasts less than a period.</p>
+    <p>The chances are for each period: with the same chances, a period half as long halves every stay. Divide the period and the chances by the same number to change state at finer times and keep the same stays: 500 ms, with 2.5 % from <sys>good</sys> to <sys>bad</sys> and 0.5 % to <sys>down</sys>, keeps the 16.7 s of <sys>good</sys>. A state lasts at least a period, but for the draws at a start and at each <gui>OK</gui> (see <link xref="netemu#running"/>).</p>
     <p>A state whose column has no chance is never reached, unless it is the first, which the link starts in and never comes back to once it leaves. A new state, which <gui>+</gui> adds with no chances, is such a state until you give it some. A state whose row has no chance keeps 100 %: once there, the link never leaves, until the Netemu starts again. <sys>down</sys> would be one without its 20 % to <sys>good</sys>: the link of the pictures would go down after 75 s on average, and stay down. So would a group of states that the others lead to, and that leads back to none of them.</p>
   </section>
   <section id="traffic">
@@ -184,6 +184,6 @@
   </section>
   <section id="running">
     <title>While it runs</title>
-    <p>The states, their values, the period and the chances change at once in a Netemu that runs; the ends when it starts again. Each start begins in the first state.</p>
+    <p>The states, their values, the period and the chances change at once in a Netemu that runs; the ends when it starts again. Each start begins in the first state, and draws at once, as soon as the chain is in place: the link can leave the first state at the very start. <gui>OK</gui> sends the whole chain again to a Netemu that runs, which draws at once too and starts its periods anew: the next draw comes a period after the <gui>OK</gui>.</p>
   </section>
 </page>
