@@ -633,7 +633,7 @@ hub_mode = false  # default</screen>
         </item>
         <item>
           <title><code>transitions</code> = <var>array</var>, default <code>[[0.0]]</code></title>
-          <p>The transition matrix: the number in row <var>i</var> and column <var>j</var> is the probability of going from state <var>i</var> to state <var>j</var> at each period. It has a row and a column for each state.</p>
+          <p>The transition matrix: the number in row <var>i</var> and column <var>j</var> is the chance, in percent, of going from state <var>i</var> to state <var>j</var> at each period: <code>5.0</code> is 5 %, not <code>0.05</code>. It has a row and a column for each state. The number on the diagonal is ignored: what a row doesn't give to the other states, its state keeps, so the numbers of a row add up to 100 at most.</p>
         </item>
       </terms>
       <p><code>states</code> is an array of tables, at least one, and the first one is the state the emulator starts in. Each state has these keys:</p>
@@ -957,7 +957,7 @@ icon = ""
 on_start = ""
 on_stop = ""
 transition_period = 100
-transitions = [[0.0, 0.2], [0.5, 0.0]]
+transitions = [[0.0, 2.0], [10.0, 0.0]]
 endpoints = ["sw1", "sw2"]
 
 [[bricks.wan.states]]

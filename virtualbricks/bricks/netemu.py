@@ -203,8 +203,8 @@ class NetemuTable(bricks.BrickConfig):
         ListOf(ListOf(Float(0))),
         factory=lambda: [[0.0]],
         help=(
-            "The probability of going from each state, a row, to each state, "
-            "a column, at each period"
+            "The chance, in %, of going from each state, a row, to each other "
+            "state, a column, at each period; a row adds up to 100 at most"
         ),
     )
     states: list[NetemuConfig] = field(

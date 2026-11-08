@@ -1193,9 +1193,11 @@ left. A socket card of a virtual machine can only be the right one.</td>
 <td><em>array</em></td>
 <td><code>[[0.0]]</code></td>
 <td>The transition matrix: the number in row <em>i</em> and column
-<em>j</em> is the probability of going from state <em>i</em> to state
-<em>j</em> at each period. It has a row and a column for each
-state.</td>
+<em>j</em> is the chance, in percent, of going from state <em>i</em> to
+state <em>j</em> at each period: <code>5.0</code> is 5 %, not
+<code>0.05</code>. It has a row and a column for each state. The number
+on the diagonal is ignored: what a row doesn't give to the other states,
+its state keeps, so the numbers of a row add up to 100 at most.</td>
 </tr>
 </tbody>
 </table>
@@ -1663,7 +1665,7 @@ icon = &quot;&quot;
 on_start = &quot;&quot;
 on_stop = &quot;&quot;
 transition_period = 100
-transitions = [[0.0, 0.2], [0.5, 0.0]]
+transitions = [[0.0, 2.0], [10.0, 0.0]]
 endpoints = [&quot;sw1&quot;, &quot;sw2&quot;]
 
 [[bricks.wan.states]]

@@ -742,9 +742,13 @@ How often the emulator may change state, in milliseconds.
 .TP
 \f[B]transitions\f[R] = \f[I]array\f[R], default \f[CR][[0.0]]\f[R]
 The transition matrix: the number in row \f[I]i\f[R] and column
-\f[I]j\f[R] is the probability of going from state \f[I]i\f[R] to state
-\f[I]j\f[R] at each period.
+\f[I]j\f[R] is the chance, in percent, of going from state \f[I]i\f[R]
+to state \f[I]j\f[R] at each period: \f[CR]5.0\f[R] is 5 %, not
+\f[CR]0.05\f[R].
 It has a row and a column for each state.
+The number on the diagonal is ignored: what a row doesn\(aqt give to the
+other states, its state keeps, so the numbers of a row add up to 100 at
+most.
 .PP
 \f[B]states\f[R] is an array of tables, at least one, and the first one
 is the state the emulator starts in.
@@ -1127,7 +1131,7 @@ icon = \(dq\(dq
 on_start = \(dq\(dq
 on_stop = \(dq\(dq
 transition_period = 100
-transitions = [[0.0, 0.2], [0.5, 0.0]]
+transitions = [[0.0, 2.0], [10.0, 0.0]]
 endpoints = [\(dqsw1\(dq, \(dqsw2\(dq]
 
 [[bricks.wan.states]]

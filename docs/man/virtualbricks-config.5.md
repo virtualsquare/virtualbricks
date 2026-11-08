@@ -705,8 +705,10 @@ can change over time between the states of a Markov chain. It runs
 
 **transitions** = *array*, default `[[0.0]]`
 :   The transition matrix: the number in row *i* and column *j* is the
-    probability of going from state *i* to state *j* at each period. It has a
-    row and a column for each state.
+    chance, in percent, of going from state *i* to state *j* at each period:
+    `5.0` is 5 %, not `0.05`. It has a row and a column for each state. The
+    number on the diagonal is ignored: what a row doesn't give to the other
+    states, its state keeps, so the numbers of a row add up to 100 at most.
 
 **states** is an array of tables, at least one, and the first one is the state
 the emulator starts in. Each state has these keys:
@@ -1076,7 +1078,7 @@ icon = ""
 on_start = ""
 on_stop = ""
 transition_period = 100
-transitions = [[0.0, 0.2], [0.5, 0.0]]
+transitions = [[0.0, 2.0], [10.0, 0.0]]
 endpoints = ["sw1", "sw2"]
 
 [[bricks.wan.states]]
