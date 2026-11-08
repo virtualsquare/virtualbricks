@@ -568,8 +568,8 @@ ReadmePicture      name:str path:str offset:int
                    -> data:bytes size:int
 SetKsm             enable:bool -> enabled:bool
 Folder             path:str -> entries:[str] more:bool
-ProgramsFound      vde_path:str qemu_path:str
-                   -> vde:str qemu:str
+ProgramsFound      vde_path:str qemu_path:str netemu_path:str
+                   -> vde:str qemu:str netemu:str
 Attach             brick:str console:str ->
 ```
 
@@ -673,12 +673,13 @@ Attach             brick:str console:str ->
     and whether there are more.
 
 **ProgramsFound**
-:   What the folders *vde_path* and *qemu_path* hold, before they are the
-    settings, as the Settings window shows them: for each, **vde** and
-    **qemu**, an object **{folder, exists, found, missing}**, whether the
-    folder is there, the programs found, by name, with their path, in the
-    folder or else in **PATH**, and those missing, each a pair of the
-    program and its package, **null** if no package has it.
+:   What the folders *vde_path*, *qemu_path* and *netemu_path* hold, before
+    they are the settings, as the Settings window shows them: for each,
+    **vde**, **qemu** and **netemu**, an object **{folder, exists, found,
+    missing}**, whether the folder is there, the programs found, by name,
+    with their path, in the folder or else in **PATH**, and those missing,
+    each a pair of the program and its package, **null** if no package has
+    it.
 
 **Attach**
 :   Join the program to a console of a running brick, see **Attach**.

@@ -428,11 +428,11 @@ The image of a disk, by name, and whether the disk writes to its private
 disk, <em>vm</em>_<em>device</em>.cow. The import changes neither.
 </dd>
 <dt><code>[settings]</code> <code>qemu_path</code>,
-<code>vde_path</code></dt>
+<code>vde_path</code>, <code>netemu_path</code></dt>
 <dd>
-The folders of QEMU and VDE on the computer it comes from. The import
-replaces each with this computer's when the folder doesn't exist here,
-unless you choose otherwise.
+The folders of QEMU, VDE and vde-netemu on the computer it comes from.
+The import replaces each with this computer's when the folder doesn't
+exist here, unless you choose otherwise.
 </dd>
 </dl>
 <p>The rest of the file is imported as it is. The private disks carry a

@@ -93,7 +93,7 @@ settings_not_saved = "The settings weren't saved: {error}"
 WINDOWS = ("terminal", "tray_icon", "warn_missing_programs")
 BRICKS = ("kernel_samepage_merging", "audio_driver", "workspace")
 # Those of the project.
-PROGRAMS = ("qemu_path", "vde_path")
+PROGRAMS = ("qemu_path", "vde_path", "netemu_path")
 LINKS = ("allow_female_plugs",)
 KSM = "kernel_samepage_merging"
 # Seconds after the last key in a folder before the window asks what it holds.
@@ -165,7 +165,7 @@ class SettingsWindow(Window):
         # the facts asked last, of which folders, and the call that asks
         # them again
         self._asking = 0
-        self._asked: tuple[str, str] | None = None
+        self._asked: tuple[str, str, str] | None = None
         self._later: IDelayedCall | None = None
         # while OK waits for KSM; once the window is gone
         self._turning = False
@@ -300,6 +300,7 @@ class SettingsWindow(Window):
         form.section(_("Programs"))
         form.path("qemu_path", _("The Folder of the QEMU Programs"), True)
         form.path("vde_path", _("The Folder of the VDE Programs"), True)
+        form.path("netemu_path", _("The Folder of vde-netemu"), True)
         form.section(_("Links"))
         form.switch("allow_female_plugs")
         # its defaults, which can't be changed while no project is open
@@ -340,9 +341,13 @@ class SettingsWindow(Window):
         if page is self.project_page and self._folders() != self._asked:
             self._ask_later()
 
-    def _folders(self) -> tuple[str, str]:
+    def _folders(self) -> tuple[str, str, str]:
         draft = self.project_page.draft
-        return draft.get("vde_path"), draft.get("qemu_path")
+        return (
+            draft.get("vde_path"),
+            draft.get("qemu_path"),
+            draft.get("netemu_path"),
+        )
 
     # The facts
 
@@ -371,13 +376,17 @@ class SettingsWindow(Window):
         question = self.engine.programs_found(*self._asked)
 
         def found(
-            answer: tuple[FolderPrograms, FolderPrograms],
+            answer: tuple[FolderPrograms, FolderPrograms, FolderPrograms],
         ) -> defer.Deferred[None]:
             if asking != self._asking:
                 return defer.succeed(None)
-            vde, qemu = answer
+            vde, qemu, netemu = answer
             self.set_facts(
-                vde=vde, qemu=qemu, qemu_version="", audio_drivers=None
+                vde=vde,
+                qemu=qemu,
+                netemu=netemu,
+                qemu_version="",
+                audio_drivers=None,
             )
             path = qemu.qemu()
             if path is None:

@@ -148,7 +148,7 @@ class RemoteTestCase(GuiTestCase):
         self.sw1 = self.factory.new_brick("switch", "sw1")
         # the machine there lacks nothing, unless a test says otherwise
         self.patch(follower.ksm, "check_ksm", lambda: True)
-        self.patch(follower, "missing_programs", lambda vde, qemu: [])
+        self.patch(follower, "missing_programs", lambda vde, qemu, netemu: [])
 
     def connect(self, target, copy, reactor, made=None):
         """The connection to the Virtualbricks of the test, followed."""
@@ -269,7 +269,9 @@ class TestRemoteApplication(RemoteTestCase):
         self.patch(follower.ksm, "check_ksm", lambda: False)
         self.patch(follower.ksm, "ksm_available", lambda: available)
         self.patch(
-            follower, "missing_programs", lambda vde, qemu: ["vde_switch"]
+            follower,
+            "missing_programs",
+            lambda vde, qemu, netemu: ["vde_switch"],
         )
 
     def wanting_ksm(self):

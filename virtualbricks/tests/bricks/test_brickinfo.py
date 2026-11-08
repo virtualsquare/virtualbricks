@@ -53,7 +53,7 @@ from virtualbricks.bricks.tunnelconnect import TunnelConnect
 from virtualbricks.bricks.tunnellisten import TunnelListen
 from virtualbricks.bricks.virtualmachine import VirtualMachine, hostonly_sock
 from virtualbricks.bricks.wire import Wire
-from virtualbricks.programs import VDE_PROGRAMS
+from virtualbricks.programs import NETEMU, VDE_PROGRAMS
 from virtualbricks.tests import BrickTestCase, short_folder
 
 
@@ -414,9 +414,12 @@ class TestIssue(BrickInfoTestCase):
         super().setUp()
         self.vde = self.folder()
         self.qemu = self.folder()
+        self.netemu = self.folder()
         for name in VDE_PROGRAMS:
-            self.install(self.vde, name)
+            if name != NETEMU:
+                self.install(self.vde, name)
         self.install(self.qemu, "qemu-system-i386")
+        self.install(self.netemu, NETEMU)
         # only the folders: this computer's PATH has programs of its own
         patcher = mock.patch.dict(os.environ, {"PATH": ""})
         patcher.start()
@@ -435,14 +438,16 @@ class TestIssue(BrickInfoTestCase):
 
     def uninstall(self, *names):
         for name in names:
-            os.remove(os.path.join(self.vde, name))
+            folder = self.netemu if name == NETEMU else self.vde
+            os.remove(os.path.join(folder, name))
 
     def issue(self, brick_class):
-        return issue(new_kind(brick_class), self.vde, self.qemu)
+        return issue(new_kind(brick_class), self.vde, self.qemu, self.netemu)
 
     def test_everything_installed(self):
         for new in NEW_KINDS:
-            self.assertIsNone(issue(new, self.vde, self.qemu), new.type)
+            found = issue(new, self.vde, self.qemu, self.netemu)
+            self.assertIsNone(found, new.type)
 
     def test_a_program_missing(self):
         self.uninstall("vde_cryptcab")
@@ -502,6 +507,19 @@ class TestIssue(BrickInfoTestCase):
                 "qemu-system-i386 isn't installed: the package"
                 " qemu-system-x86 has it. The brick can be made now, and"
                 " starts once it is installed.",
+            ),
+        )
+
+    def test_netemu_in_its_own_folder(self):
+        # the folder of vde-netemu, not VDE's
+        self.uninstall(NETEMU)
+        self.install(self.vde, NETEMU)
+        self.assertEqual(
+            self.issue(Netemu),
+            Issue(
+                "vde-netemu isn't installed",
+                "vde-netemu isn't installed: the package vde-netemu has it."
+                " The brick can be made now, and starts once it is installed.",
             ),
         )
 

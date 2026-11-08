@@ -484,7 +484,8 @@ qemu_path = "/usr/bin"
 
 **settings** = *table*
 :   The settings of the project to replace with this computer's:
-    **qemu_path** and **vde_path**, the folders of QEMU and VDE.
+    **qemu_path**, **vde_path** and **netemu_path**, the folders of QEMU,
+    VDE and vde-netemu.
 
 **qemu_img** = *path*
 :   The **qemu-img** that unpacks and rebases the disks, or \"\".

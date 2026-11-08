@@ -42,6 +42,7 @@ from virtualbricks.programs import (
     ProgramError,
     Programs,
     machine_question,
+    netemu_found,
     qemu_found,
     vde_found,
 )
@@ -578,10 +579,14 @@ class TestFacts(ClientTestCase):
     def test_programs_found_there(self):
         # the folder of the setting there, with QEMU and nothing of VDE
         folder = os.path.dirname(self.qemu)
-        vde, qemu = self.done(self.engine.programs_found("/nowhere", folder))
-        self.assertEqual(
-            (vde, qemu), (vde_found("/nowhere"), qemu_found(folder))
+        found = self.done(
+            self.engine.programs_found("/nowhere", folder, folder)
         )
+        self.assertEqual(
+            found,
+            (vde_found("/nowhere"), qemu_found(folder), netemu_found(folder)),
+        )
+        vde, qemu, _ = found
         self.assertFalse(vde.exists)
         self.assertEqual(qemu.found, {"qemu-system-x86_64": self.qemu})
         self.assertEqual([m.program for m in qemu.missing], ["qemu-img"])

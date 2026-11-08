@@ -236,7 +236,9 @@ class Application(CliApplication):
         """
 
         missing = missing_programs(
-            str(get_setting("vde_path")), str(get_setting("qemu_path"))
+            str(get_setting("vde_path")),
+            str(get_setting("qemu_path")),
+            str(get_setting("netemu_path")),
         )
 
         def warn(running: bool) -> None:

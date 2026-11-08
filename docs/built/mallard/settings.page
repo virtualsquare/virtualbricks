@@ -51,7 +51,7 @@
     <p>The settings of the open project, in its <file>project.toml</file>, so that it runs the same on another computer. With no project open, the page is greyed.</p>
     <terms>
       <item>
-        <title><gui>QEMU folder</gui>, <gui>VDE folder</gui></title>
+        <title><gui>QEMU folder</gui>, <gui>VDE folder</gui>, <gui>Netemu folder</gui></title>
         <p>Where the programs are; under each, what the folder holds. See <link xref="programs#where"/>.</p>
       </item>
       <item>

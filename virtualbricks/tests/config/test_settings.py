@@ -193,7 +193,13 @@ class TestProjectSettings(SettingsTestCase):
     def test_project_keys(self):
         self.assertEqual(
             PROJECT_KEYS,
-            {"allow_female_plugs", "qemu_path", "vde_path", "link_lines"},
+            {
+                "allow_female_plugs",
+                "qemu_path",
+                "vde_path",
+                "netemu_path",
+                "link_lines",
+            },
         )
         # none of them is a setting of the application
         self.assertFalse(PROJECT_KEYS & set(field_names(AppSettings)))

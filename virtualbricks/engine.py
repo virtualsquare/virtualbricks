@@ -85,6 +85,7 @@ from virtualbricks.programs import (
     FolderPrograms,
     Programs,
     QemuInfo,
+    netemu_found,
     qemu_found,
     qemu_programs,
     vde_found,
@@ -538,6 +539,7 @@ class LocalEngine:
             kind,
             str(get_setting("vde_path")),
             str(get_setting("qemu_path")),
+            str(get_setting("netemu_path")),
         )
 
     def qemu(self, program: str) -> defer.Deferred[QemuInfo]:
@@ -571,16 +573,20 @@ class LocalEngine:
         return defer.succeed(folder_entries(path))
 
     def programs_found(
-        self, vde_path: str, qemu_path: str
-    ) -> defer.Deferred[tuple[FolderPrograms, FolderPrograms]]:
+        self, vde_path: str, qemu_path: str, netemu_path: str
+    ) -> defer.Deferred[tuple[FolderPrograms, FolderPrograms, FolderPrograms]]:
         """
-        What the folders of the VDE and the QEMU programs hold, two
-        FolderPrograms, as the Settings window shows them before they are
-        the settings.
+        What the folders of the VDE programs, of the QEMU programs and of
+        vde-netemu hold, three FolderPrograms, as the Settings window shows
+        them before they are the settings.
         """
 
         return defer.maybeDeferred(
-            lambda: (vde_found(vde_path), qemu_found(qemu_path))
+            lambda: (
+                vde_found(vde_path),
+                qemu_found(qemu_path),
+                netemu_found(netemu_path),
+            )
         )
 
     def quit(self) -> defer.Deferred[None]:

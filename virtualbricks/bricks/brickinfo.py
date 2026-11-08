@@ -59,7 +59,7 @@ from virtualbricks.bricks.tunnellisten import TunnelListen
 from virtualbricks.bricks.virtualmachine import VirtualMachine
 from virtualbricks.bricks.wire import Wire
 from virtualbricks.i18n import _, ngettext
-from virtualbricks.programs import find_program, package_of
+from virtualbricks.programs import NETEMU, find_program, package_of
 
 if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.brickfactory import BrickFactory
@@ -505,13 +505,16 @@ class Issue:
     text: str
 
 
-def issue(kind: Kind, vde_folder: str, qemu_folder: str) -> Issue | None:
+def issue(
+    kind: Kind, vde_folder: str, qemu_folder: str, netemu_folder: str
+) -> Issue | None:
     """The programs of kind that this computer lacks, in words; or None."""
 
+    folders = (vde_folder, qemu_folder, netemu_folder)
     lacking = [
         name
         for name in kind.brick.programs
-        if not find_program(name, _folder(name, vde_folder, qemu_folder))
+        if not find_program(name, _folder(name, *folders))
     ]
     if not lacking:
         return None
@@ -527,7 +530,11 @@ def issue(kind: Kind, vde_folder: str, qemu_folder: str) -> Issue | None:
     return Issue(line, " ".join(sentences))
 
 
-def _folder(name: str, vde_folder: str, qemu_folder: str) -> str:
+def _folder(
+    name: str, vde_folder: str, qemu_folder: str, netemu_folder: str
+) -> str:
+    if name == NETEMU:
+        return netemu_folder
     return qemu_folder if name.startswith("qemu-") else vde_folder
 
 

@@ -1041,6 +1041,20 @@ class TestStart(BrickTestCase):
         self.assertEqual(self.reactor.environments, [os.environ])
         self.assertEqual(netemu.logger.levels(), ["info"])
 
+    def test_vde_netemu_in_its_own_folder(self):
+        # the folder of netemu_path, not that of the other VDE programs
+        folder = os.path.abspath(self.mktemp())
+        os.makedirs(folder)
+        program = os.path.join(folder, "vde-netemu")
+        with open(program, "w") as fp:
+            fp.write("#!/bin/sh\n")
+        os.chmod(program, 0o755)
+        set_setting("netemu_path", folder)
+        netemu = self.netemu()
+        netemu.start()
+        [(executable, args)] = self.reactor.spawned
+        self.assertEqual(executable, program)
+
     def test_warnings_to_the_old_observers(self):
         # those of twisted.python.log, which take a field named warning for
         # a warning of Python

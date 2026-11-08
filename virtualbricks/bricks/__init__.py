@@ -816,7 +816,9 @@ class Brick(Base):
         Return a Deferred of a Prepared. resume is for a virtual machine.
         """
 
-        vde = vde_info(str(get_setting("vde_path")))
+        vde = vde_info(
+            str(get_setting("vde_path")), str(get_setting("netemu_path"))
+        )
         return defer.succeed(Prepared(vde=vde))
 
     def command(self, prepared: Prepared) -> Command:

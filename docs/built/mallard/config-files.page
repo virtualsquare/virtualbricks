@@ -222,6 +222,10 @@ hub_mode = false  # default</screen>
           <p>The directory of the VDE programs, such as <code>vde_switch</code>(1).</p>
         </item>
         <item>
+          <title><code>netemu_path</code> = <var>path</var>, default <code>"/usr/bin"</code></title>
+          <p>The directory of <code>vde-netemu</code>, the program of the Netemu bricks, which no distribution ships: it may be built and installed apart from the other VDE programs.</p>
+        </item>
+        <item>
           <title><code>link_lines</code> = <var>choice</var>, default <code>"curved"</code></title>
           <p>How the picture of the lab draws the links, in every layout: <code>"straight"</code> lines from brick to brick, <code>"curved"</code> for Graphviz's curves around the bricks, or <code>"right-angles"</code> for its lines across and down. The <code>Links</code> of the menu of the Topology tab change it.</p>
         </item>
@@ -872,6 +876,7 @@ workspaces = [
 allow_female_plugs = false
 qemu_path = "/usr/bin"
 vde_path = "/usr/bin"
+netemu_path = "/usr/bin"
 link_lines = "curved"
 
 [images.debian]

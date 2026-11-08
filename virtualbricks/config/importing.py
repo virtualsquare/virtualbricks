@@ -91,7 +91,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from virtualbricks.config.workspace import Workspace
 
 # The paths of the machine a project comes from, that can be replaced.
-MACHINE_PATHS = ("qemu_path", "vde_path")
+MACHINE_PATHS = ("qemu_path", "vde_path", "netemu_path")
 
 # The choices for an image.
 COPY = "copy"

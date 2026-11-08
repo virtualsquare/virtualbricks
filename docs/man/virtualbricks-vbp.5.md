@@ -306,8 +306,8 @@ changes:
 :   The image of a disk, by name, and whether the disk writes to its
     private disk, *vm*\_*device*.cow. The import changes neither.
 
-**[settings]** **qemu_path**, **vde_path**
-:   The folders of QEMU and VDE on the computer it comes from. The import
+**[settings]** **qemu_path**, **vde_path**, **netemu_path**
+:   The folders of QEMU, VDE and vde-netemu on the computer it comes from. The import
     replaces each with this computer's when the folder doesn't exist here,
     unless you choose otherwise.
 

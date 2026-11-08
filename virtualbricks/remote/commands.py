@@ -300,15 +300,24 @@ class Folder(amp.Command):
 
 class ProgramsFound(amp.Command):
     """
-    What the folders of the VDE and the QEMU programs hold, as the Settings
-    window shows them before they are the settings (page 23 §7): JSON
-    ``{folder, exists, found, missing}`` each, whether the folder is there,
-    the programs found, by name, with their path, in the folder or else in
-    PATH, and those missing, ``[program, package]``.
+    What the folders of the VDE programs, of the QEMU programs and of
+    vde-netemu hold, as the Settings window shows them before they are the
+    settings (page 23 §7): JSON ``{folder, exists, found, missing}`` each,
+    whether the folder is there, the programs found, by name, with their
+    path, in the folder or else in PATH, and those missing,
+    ``[program, package]``.
     """
 
-    arguments = [(b"vde_path", amp.Unicode()), (b"qemu_path", amp.Unicode())]
-    response = [(b"vde", amp.Unicode()), (b"qemu", amp.Unicode())]
+    arguments = [
+        (b"vde_path", amp.Unicode()),
+        (b"qemu_path", amp.Unicode()),
+        (b"netemu_path", amp.Unicode()),
+    ]
+    response = [
+        (b"vde", amp.Unicode()),
+        (b"qemu", amp.Unicode()),
+        (b"netemu", amp.Unicode()),
+    ]
     errors = ERRORS
 
 

@@ -688,12 +688,17 @@ class TestProgramsFound(unittest.TestCase):
         root = isolate(self)
         folder = os.path.join(root, "qemu")
         img = executable(folder, "qemu-img")
+        netemu_folder = os.path.join(root, "netemu")
+        netemu = executable(netemu_folder, "vde-netemu")
         self.patch(os, "environ", dict(os.environ, PATH=""))
         engine = LocalEngine(make_factory(self))
-        vde, qemu = self.successResultOf(
-            engine.programs_found(os.path.join(root, "vde"), folder)
+        vde, qemu, found = self.successResultOf(
+            engine.programs_found(
+                os.path.join(root, "vde"), folder, netemu_folder
+            )
         )
         self.assertFalse(vde.exists)
         self.assertEqual(len(vde.missing), len(REQUIRED))
         self.assertTrue(qemu.exists)
         self.assertEqual(qemu.found, {"qemu-img": img})
+        self.assertEqual(found.found, {"vde-netemu": netemu})

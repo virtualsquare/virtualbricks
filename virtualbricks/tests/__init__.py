@@ -241,6 +241,7 @@ def fake_programs(test):
         os.chmod(path, 0o755)
     settings.set_setting("qemu_path", folder)
     settings.set_setting("vde_path", folder)
+    settings.set_setting("netemu_path", folder)
     test.patch(os, "environ", dict(os.environ, PATH=""))
     return folder
 

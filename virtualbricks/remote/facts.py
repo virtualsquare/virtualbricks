@@ -52,6 +52,7 @@ from virtualbricks.programs import (
     EMPTY_MACHINE,
     Answer,
     ProgramError,
+    netemu_found,
     programs,
     qemu_found,
     vde_found,
@@ -262,7 +263,7 @@ class Facts(_Base):
 
     @commands.ProgramsFound.responder
     def programs_found(
-        self, vde_path: str, qemu_path: str
+        self, vde_path: str, qemu_path: str, netemu_path: str
     ) -> defer.Deferred[Any]:
         def ask() -> dict[str, str]:
             return {
@@ -272,6 +273,7 @@ class Facts(_Base):
                 for name, found in (
                     ("vde", vde_found(vde_path)),
                     ("qemu", qemu_found(qemu_path)),
+                    ("netemu", netemu_found(netemu_path)),
                 )
             }
 

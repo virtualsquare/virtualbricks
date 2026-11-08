@@ -278,6 +278,11 @@ the import dialog offers to replace them with those of the open project.
 **vde_path** = *path*, default `"/usr/bin"`
 :   The directory of the VDE programs, such as **vde_switch**(1).
 
+**netemu_path** = *path*, default `"/usr/bin"`
+:   The directory of **vde-netemu**, the program of the Netemu bricks, which
+    no distribution ships: it may be built and installed apart from the
+    other VDE programs.
+
 **link_lines** = *choice*, default `"curved"`
 :   How the picture of the lab draws the links, in every layout:
     **"straight"** lines from brick to brick, **"curved"** for Graphviz's
@@ -993,6 +998,7 @@ format = 1
 allow_female_plugs = false
 qemu_path = "/usr/bin"
 vde_path = "/usr/bin"
+netemu_path = "/usr/bin"
 link_lines = "curved"
 
 [images.debian]

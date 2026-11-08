@@ -64,7 +64,7 @@ The settings of this computer, for every project, in
 The settings of the open project, in its `project.toml`{.file}, so that it runs
 the same on another computer. With no project open, the page is greyed.
 
-**QEMU folder**, **VDE folder**
+**QEMU folder**, **VDE folder**, **Netemu folder**
 
 :   Where the programs are; under each, what the folder holds. See
     [](programs#where).

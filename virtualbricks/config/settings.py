@@ -133,6 +133,14 @@ class ProjectSettings:
         label=N_("VDE folder"),
         help=N_("The folder of the VDE programs"),
     )
+    # vde-netemu has a folder of its own: no distribution ships it, so it
+    # may be built apart from the other VDE programs
+    netemu_path: str = field(
+        Path(),
+        default="/usr/bin",
+        label=N_("Netemu folder"),
+        help=N_("The folder of vde-netemu, the program of the Netemu bricks"),
+    )
     # The lines of the links in the picture of the lab, in every layout:
     # Graphviz's curves or right angles around the bricks, or straight lines
     # (page 36); the menu of the Topology tab sets it, the Settings window

@@ -33,7 +33,8 @@ No distribution ships `vde_router`{.cmd}, the program of the router.
 
 ## Where Virtualbricks looks {#where}
 
-Each project has a folder for the QEMU programs and one for the VDE programs,
+Each project has a folder for the QEMU programs, one for the VDE programs and
+one for `vde-netemu`{.cmd}, which no distribution ships and may be built apart,
 in its settings: choose **File › Settings**, then the page of the project. A
 program that isn't in its folder is looked for in the folders of `PATH`{.sys}.
 

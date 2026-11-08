@@ -397,8 +397,8 @@ ReadmePicture      name:str path:str offset:int
                    -&gt; data:bytes size:int
 SetKsm             enable:bool -&gt; enabled:bool
 Folder             path:str -&gt; entries:[str] more:bool
-ProgramsFound      vde_path:str qemu_path:str
-                   -&gt; vde:str qemu:str
+ProgramsFound      vde_path:str qemu_path:str netemu_path:str
+                   -&gt; vde:str qemu:str netemu:str
 Attach             brick:str console:str -&gt;</screen>
       <terms>
         <item>
@@ -479,7 +479,7 @@ Attach             brick:str console:str -&gt;</screen>
         </item>
         <item>
           <title><code>ProgramsFound</code></title>
-          <p>What the folders <var>vde_path</var> and <var>qemu_path</var> hold, before they are the settings, as the Settings window shows them: for each, <code>vde</code> and <code>qemu</code>, an object <code>{folder, exists, found, missing}</code>, whether the folder is there, the programs found, by name, with their path, in the folder or else in <code>PATH</code>, and those missing, each a pair of the program and its package, <code>null</code> if no package has it.</p>
+          <p>What the folders <var>vde_path</var>, <var>qemu_path</var> and <var>netemu_path</var> hold, before they are the settings, as the Settings window shows them: for each, <code>vde</code>, <code>qemu</code> and <code>netemu</code>, an object <code>{folder, exists, found, missing}</code>, whether the folder is there, the programs found, by name, with their path, in the folder or else in <code>PATH</code>, and those missing, each a pair of the program and its package, <code>null</code> if no package has it.</p>
         </item>
         <item>
           <title><code>Attach</code></title>

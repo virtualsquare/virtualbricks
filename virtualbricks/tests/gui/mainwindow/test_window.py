@@ -188,7 +188,9 @@ class TestWarningAtStart(GuiTestCase):
         self.logger = FakeLogger()
         self.patch(window, "logger", self.logger)
         self.missing = []
-        self.patch(window, "missing_programs", lambda vde, qemu: self.missing)
+        self.patch(
+            window, "missing_programs", lambda vde, qemu, netemu: self.missing
+        )
         self.available = True
         self.patch(ksm, "ksm_available", lambda: self.available)
         self.patch(ksm, "check_ksm", lambda: False)

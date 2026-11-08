@@ -393,7 +393,7 @@ qemu_path = "/usr/bin"</screen>
         </item>
         <item>
           <title><code>settings</code> = <var>table</var></title>
-          <p>The settings of the project to replace with this computer's: <code>qemu_path</code> and <code>vde_path</code>, the folders of QEMU and VDE.</p>
+          <p>The settings of the project to replace with this computer's: <code>qemu_path</code>, <code>vde_path</code> and <code>netemu_path</code>, the folders of QEMU, VDE and vde-netemu.</p>
         </item>
         <item>
           <title><code>qemu_img</code> = <var>path</var></title>

@@ -286,6 +286,11 @@ The directory of the QEMU programs.
 \f[B]vde_path\f[R] = \f[I]path\f[R], default \f[CR]\(dq/usr/bin\(dq\f[R]
 The directory of the VDE programs, such as \f[B]vde_switch\f[R](1).
 .TP
+\f[B]netemu_path\f[R] = \f[I]path\f[R], default \f[CR]\(dq/usr/bin\(dq\f[R]
+The directory of \f[B]vde\-netemu\f[R], the program of the Netemu
+bricks, which no distribution ships: it may be built and installed apart
+from the other VDE programs.
+.TP
 \f[B]link_lines\f[R] = \f[I]choice\f[R], default \f[CR]\(dqcurved\(dq\f[R]
 How the picture of the lab draws the links, in every layout:
 \f[B]\(dqstraight\(dq\f[R] lines from brick to brick,
@@ -1046,6 +1051,7 @@ format = 1
 allow_female_plugs = false
 qemu_path = \(dq/usr/bin\(dq
 vde_path = \(dq/usr/bin\(dq
+netemu_path = \(dq/usr/bin\(dq
 link_lines = \(dqcurved\(dq
 
 [images.debian]

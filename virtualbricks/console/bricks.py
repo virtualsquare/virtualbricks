@@ -349,9 +349,12 @@ def _links(brick: Brick) -> list[str]:
 )
 def types(context: Context) -> list[str]:
     rows = []
-    vde, qemu = str(get_setting("vde_path")), str(get_setting("qemu_path"))
+    folders = [
+        str(get_setting(name))
+        for name in ("vde_path", "qemu_path", "netemu_path")
+    ]
     for kind in NEW_KINDS:
-        found = issue(kind, vde, qemu)
+        found = issue(kind, *folders)
         rows.append(
             (kind.word, kind.words, found.line if found else kind.line)
         )
@@ -394,7 +397,10 @@ def new(context: Context, kind: brickinfo.Kind, name: str | None) -> list[str]:
     factory.new_brick(kind.type, name)
     lines = [name]
     found = issue(
-        kind, str(get_setting("vde_path")), str(get_setting("qemu_path"))
+        kind,
+        str(get_setting("vde_path")),
+        str(get_setting("qemu_path")),
+        str(get_setting("netemu_path")),
     )
     if found is not None:
         lines.append(found.line)

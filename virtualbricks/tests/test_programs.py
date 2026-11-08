@@ -29,6 +29,7 @@ from twisted.trial import unittest
 from virtualbricks import programs as programs_module
 from virtualbricks.programs import (
     EMPTY_MACHINE,
+    NETEMU,
     PACKAGES,
     QEMU_QUESTIONS,
     REQUIRED,
@@ -45,6 +46,7 @@ from virtualbricks.programs import (
     find_program,
     machine_question,
     missing_programs,
+    netemu_found,
     package_of,
     parse_cpus,
     parse_devices,
@@ -286,8 +288,9 @@ class TestRecordings(unittest.SynchronousTestCase):
         for target in TARGETS:
             programs = load(target)["vde"]["programs"]
             found = {name for name, path in programs.items() if path}
+            self.assertEqual(set(REQUIRED) - found, set(), target)
             # only the repository of cnrl.deis.unibo.it has vde-netemu
-            self.assertEqual(set(REQUIRED) - found, {"vde-netemu"}, target)
+            self.assertNotIn(NETEMU, found, target)
             self.assertNotIn("vde_router", found, target)
 
 
@@ -659,21 +662,35 @@ class TestFind(ProgramsTestCase):
             if name != "vde_cryptcab":
                 executable(self.bin, name)
         self.assertEqual(
-            missing_programs(self.bin, self.bin),
+            missing_programs(self.bin, self.bin, self.bin),
             [
                 Missing("vde_cryptcab", "vde2-cryptcab"),
+                Missing(NETEMU, "vde-netemu"),
                 Missing("qemu-img", "qemu-utils"),
                 Missing("qemu-system-x86_64", "qemu-system-x86"),
             ],
         )
 
     def test_nothing_missing(self):
+        for name in REQUIRED + (NETEMU, "qemu-img", "qemu-system-i386"):
+            executable(self.bin, name)
+        self.assertEqual(missing_programs(self.bin, self.bin, self.bin), [])
+
+    def test_netemu_in_its_own_folder(self):
+        # vde-netemu is looked for in its folder, not in that of VDE
+        folder = os.path.join(self.root, "netemu")
         for name in REQUIRED + ("qemu-img", "qemu-system-i386"):
             executable(self.bin, name)
-        self.assertEqual(missing_programs(self.bin, self.bin), [])
+        executable(self.bin, NETEMU)
+        self.assertEqual(
+            missing_programs(self.bin, self.bin, folder),
+            [Missing(NETEMU, "vde-netemu")],
+        )
+        executable(folder, NETEMU)
+        self.assertEqual(missing_programs(self.bin, self.bin, folder), [])
 
     def test_packages(self):
-        for name in REQUIRED + (QEMU,) + EMULATORS:
+        for name in REQUIRED + (NETEMU, QEMU) + EMULATORS:
             self.assertIsNotNone(PACKAGES[name], name)
 
 
@@ -683,6 +700,7 @@ class TestFolderPrograms(ProgramsTestCase):
     def test_vde(self):
         switch = executable(self.bin, "vde_switch")
         plug = executable(self.path, "vde_plug")
+        executable(self.bin, NETEMU)
         found = vde_found(self.bin)
         self.assertTrue(found.exists)
         self.assertEqual(found.found, {"vde_switch": switch, "vde_plug": plug})
@@ -691,6 +709,25 @@ class TestFolderPrograms(ProgramsTestCase):
             [m.program for m in found.missing],
             [name for name in REQUIRED if name not in found.found],
         )
+
+    def test_netemu(self):
+        netemu = executable(self.bin, NETEMU)
+        executable(self.bin, "vde_switch")
+        found = netemu_found(self.bin)
+        self.assertTrue(found.exists)
+        self.assertEqual(found.found, {NETEMU: netemu})
+        self.assertEqual(found.missing, ())
+
+    def test_netemu_in_path(self):
+        netemu = executable(self.path, NETEMU)
+        found = netemu_found(self.bin)
+        self.assertEqual(found.found, {NETEMU: netemu})
+        self.assertEqual(found.elsewhere(), [NETEMU])
+
+    def test_no_netemu(self):
+        found = netemu_found(self.bin)
+        self.assertFalse(found.exists)
+        self.assertEqual(found.missing, (Missing(NETEMU, "vde-netemu"),))
 
     def test_qemu(self):
         img = executable(self.bin, "qemu-img")
@@ -923,11 +960,20 @@ class TestVdeInfo(ProgramsTestCase):
     def test_found(self):
         switch = executable(self.bin, "vde_switch")
         netemu = executable(self.path, "vde-netemu")
-        info = vde_info(self.bin)
+        info = vde_info(self.bin, self.bin)
         self.assertEqual(info.folder, self.bin)
         self.assertEqual(
             info.programs, {"vde_switch": switch, "vde-netemu": netemu}
         )
+
+    def test_netemu_in_its_own_folder(self):
+        # vde-netemu in its folder, not in that of the other VDE programs
+        folder = os.path.join(self.root, "netemu")
+        switch = executable(self.bin, "vde_switch")
+        executable(self.bin, NETEMU)
+        netemu = executable(folder, NETEMU)
+        info = vde_info(self.bin, folder)
+        self.assertEqual(info.programs, {"vde_switch": switch, NETEMU: netemu})
 
 
 class TestRun(unittest.TestCase):

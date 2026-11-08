@@ -216,8 +216,8 @@ size = 33554432</screen>
         <p>The image of a disk, by name, and whether the disk writes to its private disk, <var>vm</var>_<var>device</var>.cow. The import changes neither.</p>
       </item>
       <item>
-        <title><code>[settings]</code> <code>qemu_path</code>, <code>vde_path</code></title>
-        <p>The folders of QEMU and VDE on the computer it comes from. The import replaces each with this computer's when the folder doesn't exist here, unless you choose otherwise.</p>
+        <title><code>[settings]</code> <code>qemu_path</code>, <code>vde_path</code>, <code>netemu_path</code></title>
+        <p>The folders of QEMU, VDE and vde-netemu on the computer it comes from. The import replaces each with this computer's when the folder doesn't exist here, unless you choose otherwise.</p>
       </item>
     </terms>
     <p>The rest of the file is imported as it is. The private disks carry a path too: see <code>PRIVATE DISKS</code>.</p>

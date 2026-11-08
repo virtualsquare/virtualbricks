@@ -28,7 +28,13 @@ from virtualbricks.config.settings import get_setting, set_setting
 from virtualbricks.config.tomlfile import load_toml
 from virtualbricks.engine import LocalEngine
 from virtualbricks.observable import Observable, Signal
-from virtualbricks.programs import REQUIRED, FolderPrograms, Missing, Version
+from virtualbricks.programs import (
+    NETEMU,
+    REQUIRED,
+    FolderPrograms,
+    Missing,
+    Version,
+)
 from virtualbricks.settingsdraft import TERMINALS
 from virtualbricks.tests.gui import (
     GuiTestCase,
@@ -53,6 +59,14 @@ def vde(folder, missing=(), exists=True):
     )
 
 
+def netemu(folder, installed=True):
+    if not installed:
+        return FolderPrograms(
+            folder, True, {}, (Missing(NETEMU, "vde-netemu"),)
+        )
+    return FolderPrograms(folder, True, {NETEMU: f"{folder}/{NETEMU}"}, ())
+
+
 def qemu(folder, exists=True):
     found = {
         name: f"{folder}/{name}"
@@ -67,16 +81,18 @@ class Facts:
     def __init__(self, missing=(), exists=True):
         self.missing = missing
         self.exists = exists
+        self.netemu = True
         self.asked = []
         self.probed = []
         # the answers held back, if any
         self.held = None
 
-    def programs_found(self, vde_path, qemu_path):
-        self.asked.append((vde_path, qemu_path))
+    def programs_found(self, vde_path, qemu_path, netemu_path):
+        self.asked.append((vde_path, qemu_path, netemu_path))
         answer = (
             vde(vde_path, self.missing),
             qemu(qemu_path, self.exists),
+            netemu(netemu_path, self.netemu),
         )
         if self.held is not None:
             held = defer.Deferred()
@@ -383,7 +399,9 @@ class TestFacts(WindowTestCase):
     def test_at_once(self):
         self.facts.missing = ("vde_cryptcab",)
         window = self.window()
-        self.assertEqual(self.facts.asked, [("/usr/bin", "/usr/bin")])
+        self.assertEqual(
+            self.facts.asked, [("/usr/bin", "/usr/bin", "/usr/bin")]
+        )
         self.assertEqual(self.facts.probed, ["/usr/bin/qemu-system-x86_64"])
         self.assertIn(
             "QEMU 10.0.11: qemu-img and qemu-system-i386 and x86_64",
@@ -393,6 +411,20 @@ class TestFacts(WindowTestCase):
         self.assertEqual(
             vde_row.problem.get_text(),
             "Missing here and in PATH: vde_cryptcab (vde2)",
+        )
+        # only a warning
+        self.assertTrue(window.ok_button.get_sensitive())
+        self.assertIn(
+            "vde-netemu is here",
+            row(window, "netemu_path").caption.get_text(),
+        )
+
+    def test_netemu_missing(self):
+        self.facts.netemu = False
+        window = self.window()
+        self.assertEqual(
+            row(window, "netemu_path").problem.get_text(),
+            "Missing here and in PATH: vde-netemu (vde-netemu)",
         )
         # only a warning
         self.assertTrue(window.ok_button.get_sensitive())
@@ -420,8 +452,22 @@ class TestFacts(WindowTestCase):
         self.clock.advance(settings_window.FOLDER_DELAY - 0.1)
         self.assertEqual(len(self.facts.asked), 1)
         self.clock.advance(0.1)
-        self.assertEqual(self.facts.asked[-1], ("/usr/bin", "/opt/qemu"))
+        self.assertEqual(
+            self.facts.asked[-1], ("/usr/bin", "/opt/qemu", "/usr/bin")
+        )
         self.assertEqual(len(self.facts.asked), 2)
+
+    def test_the_netemu_folder_typed(self):
+        window = self.window()
+        control(window, "netemu_path").set_text("/opt/netemu")
+        self.clock.advance(settings_window.FOLDER_DELAY)
+        self.assertEqual(
+            self.facts.asked[-1], ("/usr/bin", "/usr/bin", "/opt/netemu")
+        )
+        self.assertIn(
+            "vde-netemu is here",
+            row(window, "netemu_path").caption.get_text(),
+        )
 
     def test_a_switch_asks_nothing(self):
         window = self.window()
@@ -521,6 +567,7 @@ class TestOverAConnection(WindowTestCase):
                 "audio_driver": "pipewire",
                 "vde_path": "/opt/vde/bin",
                 "qemu_path": "/opt/qemu/bin",
+                "netemu_path": "/opt/netemu/bin",
                 "allow_female_plugs": True,
                 "link_lines": "curved",
             }
@@ -560,7 +607,10 @@ class TestOverAConnection(WindowTestCase):
         self.assertEqual(
             control(window, "terminal").get_text(), get_setting("terminal")
         )
-        self.assertEqual(self.facts.asked, [("/opt/vde/bin", "/opt/qemu/bin")])
+        self.assertEqual(
+            self.facts.asked,
+            [("/opt/vde/bin", "/opt/qemu/bin", "/opt/netemu/bin")],
+        )
 
     def test_ok(self):
         window = self.window

@@ -427,7 +427,11 @@ def facts(
     if found:
         rows.append(Fact(QEMU, _("QEMU"), found))
     if get_setting("warn_missing_programs"):
-        missing = missing_programs(str(get_setting("vde_path")), qemu_path)
+        missing = missing_programs(
+            str(get_setting("vde_path")),
+            qemu_path,
+            str(get_setting("netemu_path")),
+        )
         if missing:
             names = ", ".join(map(str, missing))
             rows.append(Fact(MISSING, _("Missing"), names))

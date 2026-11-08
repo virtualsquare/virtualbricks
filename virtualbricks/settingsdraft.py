@@ -53,7 +53,7 @@ from virtualbricks.bricks.draft import Draft, Problem, copy
 from virtualbricks.bricks.eventinfo import names
 from virtualbricks.config.schema import field_names
 from virtualbricks.i18n import _
-from virtualbricks.programs import FolderPrograms
+from virtualbricks.programs import NETEMU, FolderPrograms
 
 # The commands of the terminals that the Settings window offers, each with
 # the place of the console as its terminal takes a program and its arguments
@@ -109,6 +109,7 @@ class Facts:
     # what the folders hold, each as it was asked for its folder
     vde: FolderPrograms | None = None
     qemu: FolderPrograms | None = None
+    netemu: FolderPrograms | None = None
     # the version of the QEMU of the folder, as "10.0.11", and its audio
     # drivers
     qemu_version: str = ""
@@ -215,6 +216,8 @@ class SettingsDraft(Draft):
             return self._qemu_note()
         if name == "vde_path":
             return self._vde_note()
+        if name == "netemu_path":
+            return self._netemu_note()
         return ""
 
     def _folder(self, name: str) -> FolderPrograms | None:
@@ -275,6 +278,17 @@ class SettingsDraft(Draft):
         return _("The {count} VDE programs of the bricks are here").format(
             count=len(found.found)
         )
+
+    def _netemu_note(self) -> str:
+        found = self._folder("netemu_path")
+        if found is None or not found.found:
+            # the problem says that it is missing
+            return ""
+        if self._elsewhere(found):
+            return _("In PATH, not here: {program}").format(program=NETEMU)
+        if not found.folder:
+            return _("{program} is in PATH").format(program=NETEMU)
+        return _("{program} is here").format(program=NETEMU)
 
     def check(self) -> list[Problem]:
         problems = []
@@ -340,3 +354,4 @@ class SettingsDraft(Draft):
 
     _check_qemu_path = _check_folder
     _check_vde_path = _check_folder
+    _check_netemu_path = _check_folder

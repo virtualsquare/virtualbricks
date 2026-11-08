@@ -220,9 +220,10 @@ def machine_table(
 
     vde = str(settings.get_setting("vde_path"))
     qemu = str(settings.get_setting("qemu_path"))
+    netemu = str(settings.get_setting("netemu_path"))
     lacks: dict[str, dict[str, str] | None] = {}
     for kind in NEW_KINDS:
-        found = issue(kind, vde, qemu)
+        found = issue(kind, vde, qemu, netemu)
         lacks[kind.type] = (
             None if found is None else {"line": found.line, "text": found.text}
         )
@@ -243,7 +244,9 @@ def machine_table(
             workspace.path
         ),
         "runtime_dir": factory.runtime_dir,
-        "missing": [str(missing) for missing in missing_programs(vde, qemu)],
+        "missing": [
+            str(missing) for missing in missing_programs(vde, qemu, netemu)
+        ],
         # each program once, and the links to them apart
         "qemu_programs": qemu_programs(qemu),
         "qemu_links": qemu_links(qemu),

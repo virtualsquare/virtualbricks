@@ -23,7 +23,7 @@ from twisted.trial import unittest
 from virtualbricks.bricks.draft import Problem
 from virtualbricks.config.schema import dump_record
 from virtualbricks.config.settings import AppSettings, ProjectSettings
-from virtualbricks.programs import REQUIRED, FolderPrograms, Missing
+from virtualbricks.programs import NETEMU, REQUIRED, FolderPrograms, Missing
 from virtualbricks.settingsdraft import (
     TERMINALS,
     Facts,
@@ -62,6 +62,13 @@ def vde(folder="/usr/bin", missing=(), elsewhere=(), exists=True):
         found,
         tuple(Missing(name, "vde2") for name in missing),
     )
+
+
+def netemu(folder="/usr/bin", installed=True, elsewhere=False, exists=True):
+    path = f"/elsewhere/{NETEMU}" if elsewhere else f"{folder}/{NETEMU}"
+    found = {NETEMU: path} if installed else {}
+    missing = () if installed else (Missing(NETEMU, "vde-netemu"),)
+    return FolderPrograms(folder, exists, found, missing)
 
 
 def qemu(folder="/usr/bin", emulators=("x86_64",), img=True, exists=True):
@@ -109,7 +116,13 @@ class TestDraft(unittest.TestCase):
         self.assertEqual(draft.get("qemu_path"), "/opt/qemu")
         self.assertEqual(
             draft.keys,
-            ("allow_female_plugs", "qemu_path", "vde_path", "link_lines"),
+            (
+                "allow_female_plugs",
+                "qemu_path",
+                "vde_path",
+                "netemu_path",
+                "link_lines",
+            ),
         )
         self.assertEqual(draft.changes(), {})
         self.assertEqual(draft.problems(), [])
@@ -304,6 +317,48 @@ class TestFolders(unittest.TestCase):
     def setUp(self):
         self.draft = SettingsDraft(owner(ProjectSettings))
 
+    def test_netemu_here(self):
+        self.draft.facts = Facts(netemu=netemu())
+        self.assertEqual(self.draft.problems(), [])
+        self.assertEqual(self.draft.note("netemu_path"), "vde-netemu is here")
+
+    def test_netemu_in_path(self):
+        self.draft.facts = Facts(netemu=netemu(elsewhere=True))
+        self.assertEqual(
+            self.draft.note("netemu_path"), "In PATH, not here: vde-netemu"
+        )
+        self.draft.set("netemu_path", "")
+        self.draft.facts = Facts(netemu=netemu(folder="", elsewhere=True))
+        self.assertEqual(
+            self.draft.note("netemu_path"), "vde-netemu is in PATH"
+        )
+
+    def test_netemu_missing(self):
+        self.draft.facts = Facts(netemu=netemu(installed=False))
+        self.assertEqual(
+            self.draft.problems(),
+            [
+                Problem(
+                    "netemu_path",
+                    "Missing here and in PATH: vde-netemu (vde-netemu)",
+                    error=False,
+                )
+            ],
+        )
+        # the problem says it
+        self.assertEqual(self.draft.note("netemu_path"), "")
+
+    def test_no_netemu_folder(self):
+        self.draft.set("netemu_path", "/opt/netemu")
+        self.draft.facts = Facts(
+            netemu=netemu("/opt/netemu", installed=False, exists=False)
+        )
+        self.assertEqual(
+            self.draft.errors(),
+            [Problem("netemu_path", "No folder /opt/netemu")],
+        )
+        self.assertEqual(self.draft.note("netemu_path"), "")
+
     def test_unknown_yet(self):
         self.assertEqual(self.draft.problems(), [])
         self.assertEqual(self.draft.note("qemu_path"), "")
@@ -321,7 +376,7 @@ class TestFolders(unittest.TestCase):
         )
         self.assertEqual(
             self.draft.note("vde_path"),
-            "The 9 VDE programs of the bricks are here",
+            "The 8 VDE programs of the bricks are here",
         )
 
     def test_many_emulators(self):
@@ -394,7 +449,7 @@ class TestFolders(unittest.TestCase):
         )
         self.assertEqual(
             self.draft.note("vde_path"),
-            "The 9 VDE programs of the bricks are in PATH",
+            "The 8 VDE programs of the bricks are in PATH",
         )
         self.assertEqual(
             self.draft.problems(),

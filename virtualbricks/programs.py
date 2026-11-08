@@ -48,6 +48,7 @@ from twisted.python.failure import Failure
 
 __all__ = [
     "EMPTY_MACHINE",
+    "NETEMU",
     "QEMU_QUESTIONS",
     "VDE_PROGRAMS",
     "Answer",
@@ -151,6 +152,9 @@ PACKAGES: dict[str, str | tuple[str, ...] | None] = {
     "qemu-system-ppc64le": "qemu-system-ppc",
 }
 VDE_PROGRAMS = tuple(name for name in PACKAGES if not name.startswith("qemu"))
+# The program of the Netemu bricks, the VDE program with a folder of its own
+# in the settings: no distribution ships it, so it may be built apart.
+NETEMU = "vde-netemu"
 
 
 def package_of(program: str) -> str | None:
@@ -518,15 +522,15 @@ def qemu_links(folder: str) -> list[str]:
     )
 
 
-# The programs that Virtualbricks warns about at start when they're missing:
-# all but vde_router, which no package has.
+# The VDE programs that Virtualbricks warns about at start when they're
+# missing from the folder of vde_path: all but vde_router, which no package
+# has, and NETEMU, which has a folder of its own.
 REQUIRED = (
     "vde_switch",
     "vde_plug",
     "dpipe",
     "vde_plug2tap",
     "vde_pcapplug",
-    "vde-netemu",
     "vdeterm",
     "unixterm",
     "vde_cryptcab",
@@ -610,10 +614,17 @@ def _exists(folder: str) -> bool:
     return not folder or os.path.isdir(folder)
 
 
-def vde_info(folder: str) -> VdeInfo:
-    """Which VDE programs there are, in folder and else in PATH."""
+def vde_info(folder: str, netemu_folder: str) -> VdeInfo:
+    """
+    Which VDE programs there are, in folder and else in PATH: NETEMU in
+    netemu_folder and else in PATH.
+    """
 
-    return VdeInfo(folder, _found(folder, VDE_PROGRAMS))
+    programs = _found(
+        folder, (name for name in VDE_PROGRAMS if name != NETEMU)
+    )
+    programs.update(_found(netemu_folder, [NETEMU]))
+    return VdeInfo(folder, programs)
 
 
 def vde_found(folder: str) -> FolderPrograms:
@@ -625,6 +636,14 @@ def vde_found(folder: str) -> FolderPrograms:
         for name in REQUIRED
         if name not in found
     )
+    return FolderPrograms(folder, _exists(folder), found, missing)
+
+
+def netemu_found(folder: str) -> FolderPrograms:
+    """What folder holds of NETEMU."""
+
+    found = _found(folder, [NETEMU])
+    missing = () if found else (Missing(NETEMU, package_of(NETEMU)),)
     return FolderPrograms(folder, _exists(folder), found, missing)
 
 
@@ -643,10 +662,16 @@ def qemu_found(folder: str) -> FolderPrograms:
     return FolderPrograms(folder, _exists(folder), found, tuple(missing))
 
 
-def missing_programs(vde_folder: str, qemu_folder: str) -> list[Missing]:
+def missing_programs(
+    vde_folder: str, qemu_folder: str, netemu_folder: str
+) -> list[Missing]:
     """The programs of the bricks that aren't installed."""
 
-    return [*vde_found(vde_folder).missing, *qemu_found(qemu_folder).missing]
+    return [
+        *vde_found(vde_folder).missing,
+        *netemu_found(netemu_folder).missing,
+        *qemu_found(qemu_folder).missing,
+    ]
 
 
 # Asking the programs

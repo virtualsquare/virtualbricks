@@ -289,9 +289,10 @@ files again as it saves, so comments added by hand don't last.
 Each project has its own settings, in its `project.toml`: the first time,
 choose in *File › Settings*, on the page *Project* and its name, where
 Virtualbricks finds the programs: `qemu_path` and `vde_path`, the folders of
-the QEMU and VDE programs. Each folder says what it holds, and what it lacks
-with the package that has it. A new project starts with a copy of the
-settings of the project that is open. The page *This computer* sets
+the QEMU and VDE programs, and `netemu_path`, the folder of `vde-netemu`.
+Each folder says what it holds, and what it lacks with the package that has
+it. A new project starts with a copy of the settings of the project that is
+open. The page *This computer* sets
 `terminal`, the terminal of the consoles, one of those its menu offers or
 any other, as a command line with `{command}` where the console goes:
 `xterm -T {name} -e {command}`, where `{name}` is the name of the brick.

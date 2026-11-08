@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-08 16:21+0100\n"
+"POT-Creation-Date: 2026-11-08 22:06+0100\n"
 "PO-Revision-Date: 2011-05-28 15:34+0000\n"
 "Last-Translator: marcos.gm <Unknown>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -1173,6 +1173,14 @@ msgstr ""
 
 #: virtualbricks/config/settings.py
 msgid "The folder of the VDE programs"
+msgstr ""
+
+#: virtualbricks/config/settings.py
+msgid "Netemu folder"
+msgstr ""
+
+#: virtualbricks/config/settings.py
+msgid "The folder of vde-netemu, the program of the Netemu bricks"
 msgstr ""
 
 #: virtualbricks/config/settings.py
@@ -3686,6 +3694,11 @@ msgid "The Folder of the VDE Programs"
 msgstr "_Crear nueva imagen"
 
 #: virtualbricks/gui/dialogs/settings.py
+#, fuzzy
+msgid "The Folder of vde-netemu"
+msgstr "_Crear nueva imagen"
+
+#: virtualbricks/gui/dialogs/settings.py
 #, python-brace-format
 msgid "{page}: {setting}: {problem}"
 msgstr ""
@@ -5378,6 +5391,21 @@ msgstr ""
 #, python-brace-format
 msgid "The {count} VDE programs of the bricks are here"
 msgstr ""
+
+#: virtualbricks/settingsdraft.py
+#, python-brace-format
+msgid "In PATH, not here: {program}"
+msgstr ""
+
+#: virtualbricks/settingsdraft.py
+#, fuzzy, python-brace-format
+msgid "{program} is in PATH"
+msgstr "<b> Icono de Maquina Virtual </b>"
+
+#: virtualbricks/settingsdraft.py
+#, fuzzy, python-brace-format
+msgid "{program} is here"
+msgstr "<b> Icono de Maquina Virtual </b>"
 
 #: virtualbricks/settingsdraft.py
 msgid "No terminal: the consoles of the bricks can't open"

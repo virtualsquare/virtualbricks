@@ -398,6 +398,14 @@ only to switches.</td>
 <code>vde_switch</code>(1).</td>
 </tr>
 <tr>
+<td><code>netemu_path</code></td>
+<td><em>path</em></td>
+<td><code>"/usr/bin"</code></td>
+<td>The directory of <code>vde-netemu</code>, the program of the Netemu
+bricks, which no distribution ships: it may be built and installed apart
+from the other VDE programs.</td>
+</tr>
+<tr>
 <td><code>link_lines</code></td>
 <td><em>choice</em></td>
 <td><code>"curved"</code></td>
@@ -1580,6 +1588,7 @@ writes all of its keys, and the six empty disks.</p>
 allow_female_plugs = false
 qemu_path = &quot;/usr/bin&quot;
 vde_path = &quot;/usr/bin&quot;
+netemu_path = &quot;/usr/bin&quot;
 link_lines = &quot;curved&quot;
 
 [images.debian]

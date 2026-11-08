@@ -462,7 +462,9 @@ class TestCheckPrerequisites(GuiTestCase):
         self.logger = FakeLogger()
         self.patch(gui_app, "logger", self.logger)
         self.missing = []
-        self.patch(gui_app, "missing_programs", lambda vde, qemu: self.missing)
+        self.patch(
+            gui_app, "missing_programs", lambda vde, qemu, netemu: self.missing
+        )
         self.available = True
         self.patch(ksm, "ksm_available", lambda: self.available)
         self.running = True
