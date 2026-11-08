@@ -26,13 +26,17 @@ that works:
 1. in Yelp, the program the desktop opens ``help:`` links with, when
    there is one:
 
-   - ``help:virtualbricks/PAGE``, when the pages are installed where Yelp
-     looks for them: in ``help/C/virtualbricks/`` of the user's data folder
-     or of a data folder of the system;
+   - ``help:virtualbricks/PAGE``, when the pages Yelp finds for it, in
+     ``help/C/virtualbricks/`` of the first data folder that has them, the
+     user's or one of the system, are those of this Virtualbricks;
    - else the file of the page, ``file:///.../PAGE.page``: the one of the
      sources, as in a checkout, else the one installed under
      ``sys.prefix``, the user base or ``sys.base_prefix``, as in a
-     virtualenv, whose data folder Yelp doesn't know;
+     virtualenv, whose data folder Yelp doesn't know. The guide that Yelp
+     finds is then another Virtualbricks's, as a package of the system, of
+     another version: it may lack a page;
+   - else, without them, ``help:virtualbricks/PAGE``, if Yelp finds a
+     guide;
 
 2. else, or without the pages, the HTML of the page, in the browser: the
    one of the sources, else the one installed under those prefixes, as
@@ -52,7 +56,7 @@ from __future__ import annotations
 import site
 import sys
 from collections.abc import Sequence
-from os.path import abspath, dirname, isfile, join
+from os.path import abspath, dirname, isfile, join, samefile
 
 from gi.repository import Gdk, Gio, GLib, Gtk
 from twisted.logger import Logger
@@ -87,17 +91,20 @@ def find_yelp() -> Gio.AppInfo | None:
     return Gio.AppInfo.get_default_for_uri_scheme("help")
 
 
-def yelp_finds_it(data_dirs: Sequence[str] | None = None) -> bool:
+def yelp_pages(data_dirs: Sequence[str] | None = None) -> str | None:
     """
-    Whether the pages are where Yelp looks for help:virtualbricks: in one of
-    data_dirs, by default those of the user and of the system.
+    The folder of the pages Yelp shows for help:virtualbricks: the first of
+    data_dirs that has them, by default the one of the user, then those of
+    the system, in their order, as Yelp looks; None if none has.
     """
 
     if data_dirs is None:
         data_dirs = [GLib.get_user_data_dir(), *GLib.get_system_data_dirs()]
-    return any(
-        isfile(join(folder, PAGES, "index.page")) for folder in data_dirs
-    )
+    for folder in data_dirs:
+        pages = join(folder, PAGES)
+        if isfile(join(pages, "index.page")):
+            return pages
+    return None
 
 
 def _find(
@@ -144,13 +151,16 @@ def yelp_uri(
 ) -> str | None:
     """
     The URI of page, or of the index if None, for Yelp: a help: link where
-    Yelp finds the pages (yelp_finds_it(data_dirs)), else the file of the
-    page (find_pages(prefixes)); None if there are no pages.
+    the pages Yelp finds (yelp_pages(data_dirs)) are those of this
+    Virtualbricks (find_pages(prefixes)), else the file of its page; a
+    help: link without them, where Yelp finds a guide; None if there are no
+    pages.
     """
 
-    if yelp_finds_it(data_dirs):
-        return f"help:{ID}/{page}" if page else f"help:{ID}"
+    found = yelp_pages(data_dirs)
     folder = find_pages(prefixes)
+    if found is not None and (folder is None or samefile(found, folder)):
+        return f"help:{ID}/{page}" if page else f"help:{ID}"
     if folder is None:
         return None
     path = join(folder, f"{page or 'index'}.page")

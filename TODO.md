@@ -438,9 +438,11 @@
   this computer is named in the bar of the Projects window, or in an error
   (`gui/drop.py`, 04 §3, §9, Since then)
 - [x] The guide opens in Yelp, the program of `help:` links, wherever the
-  pages are: `help:virtualbricks` where they are installed where Yelp
-  looks, else the files of the pages, of the sources or of a virtualenv;
-  without Yelp, the HTML in the browser (`gui/help.py`, 28 Since then)
+  pages are: `help:virtualbricks` where the pages Yelp finds are its own,
+  else the files of the pages, of the sources or of a virtualenv, also
+  where Yelp finds another Virtualbricks's guide, as an older package of
+  the system; without Yelp, the HTML in the browser (`gui/help.py`, 28
+  Since then)
 - [x] A Tutorials section in the guide, the last; the first,
   `tutorial-import`, "Import DTN2hops": the archive and `debian13.qcow2`,
   downloaded apart, imported with Use a file…; what the Import window

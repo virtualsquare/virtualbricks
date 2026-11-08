@@ -5385,6 +5385,24 @@ def pages_for_yelp(virtualbricks):
     )
 
 
+@given("the guide of another Virtualbricks is where Yelp looks")
+def other_guide_for_yelp(virtualbricks):
+    """
+    Before Virtualbricks starts: help/C/virtualbricks of the data folder of
+    the user has the guide of another Virtualbricks, as an older one that a
+    package of the system installs: its index, without the other pages.
+    """
+
+    folder = os.path.join(
+        virtualbricks.home, ".local", "share", "help", "C", "virtualbricks"
+    )
+    os.makedirs(folder)
+    shutil.copy(
+        os.path.join(harness.ROOT, "docs", "built", "mallard", "index.page"),
+        folder,
+    )
+
+
 @when("I press F1 in the Settings window")
 def f1_in_settings(virtualbricks):
     virtualbricks.key("F1", virtualbricks.find("dialog", SETTINGS_WINDOW))

@@ -107,19 +107,31 @@ class TestFindYelp(HelpTestCase):
         self.assertIsNone(find_yelp())
 
 
-class TestYelpFindsIt(HelpTestCase):
+class TestYelpPages(HelpTestCase):
 
     def setUp(self):
         self.data = self.mktemp()
         self.empty = self.mktemp()
 
+    def pages(self, data):
+        folder = os.path.join(data, "help", "C", "virtualbricks")
+        self.touch(folder, "index.page")
+        return folder
+
     def test_the_pages_there(self):
-        self.touch(self.data, "help", "C", "virtualbricks", "index.page")
-        self.assertTrue(help.yelp_finds_it([self.empty, self.data]))
+        folder = self.pages(self.data)
+        self.assertEqual(help.yelp_pages([self.empty, self.data]), folder)
+
+    def test_the_first_folder(self):
+        # the user's before those of the system
+        user = self.mktemp()
+        folder = self.pages(user)
+        self.pages(self.data)
+        self.assertEqual(help.yelp_pages([user, self.data]), folder)
 
     def test_no_pages(self):
         self.touch(self.data, "help", "C", "gedit", "index.page")
-        self.assertFalse(help.yelp_finds_it([self.empty, self.data]))
+        self.assertIsNone(help.yelp_pages([self.empty, self.data]))
 
 
 class TestFindPages(HelpTestCase):
@@ -199,12 +211,44 @@ class TestYelpUri(HelpTestCase):
     def uri(self, page):
         return yelp_uri(page, [self.data], [self.venv])
 
+    def where_yelp_looks(self):
+        """The folder of the pages in the data folder, where Yelp looks."""
+
+        folder = os.path.join(self.data, "help", "C")
+        os.makedirs(folder)
+        return os.path.join(folder, "virtualbricks")
+
     def test_installed(self):
-        self.touch(self.data, "help", "C", "virtualbricks", "index.page")
-        # before the sources
+        # under a prefix whose share/ is a data folder, as /usr
+        prefix = self.mktemp()
+        self.touch(prefix, "share", "help", "C", "virtualbricks", "index.page")
+        data = os.path.join(prefix, "share")
+        self.assertEqual(
+            yelp_uri("settings", [data], [prefix]),
+            "help:virtualbricks/settings",
+        )
+        self.assertEqual(
+            yelp_uri(None, [data], [prefix]), "help:virtualbricks"
+        )
+
+    def test_the_sources_where_yelp_looks(self):
         self.touch(self.source, "index.page")
+        os.symlink(os.path.abspath(self.source), self.where_yelp_looks())
         self.assertEqual(self.uri("settings"), "help:virtualbricks/settings")
-        self.assertEqual(self.uri(None), "help:virtualbricks")
+
+    def test_another_guide_where_yelp_looks(self):
+        # another Virtualbricks's, as a package of the system: the pages of
+        # the sources, not those, which may lack a page
+        self.touch(self.where_yelp_looks(), "index.page")
+        self.touch(self.source, "index.page")
+        self.assertEqual(
+            self.uri("switches"), file_uri(self.source, "switches.page")
+        )
+        self.assertEqual(self.uri(None), file_uri(self.source, "index.page"))
+
+    def test_another_guide_without_the_pages(self):
+        self.touch(self.where_yelp_looks(), "index.page")
+        self.assertEqual(self.uri("settings"), "help:virtualbricks/settings")
 
     def test_the_sources(self):
         self.touch(self.source, "index.page")
@@ -244,7 +288,9 @@ class TestShowHelp(HelpTestCase):
         self.installed = False
         self.pages = None
         self.patch(
-            help, "yelp_finds_it", lambda data_dirs=None: self.installed
+            help,
+            "yelp_pages",
+            lambda data_dirs=None: "/y" if self.installed else None,
         )
         self.patch(help, "find_pages", lambda prefixes=None: self.pages)
         self.patch(help, "find_html", lambda: "/h")
