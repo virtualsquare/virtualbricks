@@ -14,6 +14,8 @@ started by hand, by a script or by another project. The bricks of this project
 plug into it as into a switch of their own. Virtualbricks doesn't start it or
 stop it: the wrapper runs while a switch listens in its folder.
 
+![The settings of a switch wrapper](figures/switch-wrapper-settings.png){alt="The settings of wr1: Control folder, /tmp/lab-switch, with the button that chooses a folder beside it."}
+
 ## Switch {#switch}
 
 **Control folder**

@@ -15,6 +15,8 @@ computer has already, as its Ethernet card: the packets of that interface go
 into the switch, and those of the switch go out of the interface. It runs
 `vde_pcapplug`{.cmd} as root, through `sudo`{.cmd}; see [](problems#sudo).
 
+![The settings of a capture interface](figures/capture-settings.png){alt="The settings of cap1: Plugged into, sw1; Interface, eth0."}
+
 ## Connection {#connection}
 
 **Plugged into**

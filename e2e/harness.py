@@ -702,11 +702,78 @@ class Virtualbricks:
                     found = self.shows(role, name, within)
         return found or self.find(role, name, within)
 
-    def _turn(self, pane, bar, down):
-        """A turn of the wheel over pane; then its scroll bar moves."""
+    def scroll_to(self, role, name, pane):
+        """
+        The widget of role and name in pane, a scroll pane, once the wheel
+        has scrolled pane down until the widget is at its top, as far as a
+        turn goes without taking it out at the top, or until pane is at its
+        bottom: as a user brings a part of a page into view. The wheel turns
+        over the scroll bar, where it can't change a setting, as that of a
+        spin button, and a scroll pane inside pane keeps its place.
+        """
+
+        bars = [
+            bar
+            for bar in (
+                pane.get_child_at_index(i)
+                for i in range(pane.get_child_count())
+            )
+            if bar is not None
+            and bar.get_role_name() == "scroll bar"
+            and a11y.vertical(bar)
+        ]
+
+        def everything(node):
+            # shown or not: GTK 3 takes some boxes of a scroll pane for
+            # out of it, but not the widgets in them
+            yield node
+            for i in range(node.get_child_count()):
+                child = node.get_child_at_index(i)
+                if child is not None:
+                    yield from everything(child)
+
+        widget = next(
+            (
+                node
+                for node in everything(pane)
+                if node.get_role_name() == role and a11y.label(node) == name
+            ),
+            None,
+        )
+        assert widget is not None, f"no {role} {name!r} in the pane"
+
+        def below_the_top():
+            # None while the widget is out of pane
+            if not a11y.showing(widget):
+                return None
+            return a11y.extents(widget)[1] - a11y.extents(pane)[1]
+
+        seen = False
+        while bars and a11y.position(bars[0])[0] < a11y.position(bars[0])[2]:
+            before = below_the_top()
+            if before is not None:
+                seen = True
+                if before <= 0:
+                    break
+            self._turn(pane, bars[0], down=True, over=bars[0])
+            after = below_the_top()
+            if seen and (after is None or after < 0):
+                # a turn too far: the widget is out at the top
+                self._turn(pane, bars[0], down=False, over=bars[0])
+                break
+        self.wait_for(
+            lambda: a11y.showing(widget), f"the {role} {name!r} shows"
+        )
+        return widget
+
+    def _turn(self, pane, bar, down, over=None):
+        """
+        A turn of the wheel over pane, or over the widget over; then the
+        scroll bar of pane moves.
+        """
 
         before = a11y.position(bar)[0]
-        self.browser.scroll(*a11y.center(pane), down)
+        self.browser.scroll(*a11y.center(over or pane), down)
         self.wait_for(
             lambda: a11y.position(bar)[0] != before, "the list scrolls"
         )

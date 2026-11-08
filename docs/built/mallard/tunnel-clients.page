@@ -9,6 +9,12 @@
   </info>
   <title>Tunnel clients</title>
   <p>A tunnel joins a switch of this computer to a switch of another one, over the network, through an encrypted link. The tunnel client is the end that connects to a tunnel server on the other computer. Both run <cmd>vde_cryptcab</cmd>. See <link xref="tunnel-servers"/> for the other end.</p>
+  <figure>
+    <title>The settings of a tunnel client</title>
+    <media type="image" mime="image/png" src="figures/tunnel-client-settings.png">
+      <p>The settings of tc1: Plugged into, sw1; Server, 192.0.2.10; Server port, 7667; Local port, 10771; Password, hidden as dots.</p>
+    </media>
+  </figure>
   <section id="connection">
     <title>Connection</title>
     <terms>

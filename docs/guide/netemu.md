@@ -16,6 +16,9 @@ and it moves between them by chance, as a link that degrades and recovers. It
 runs `vde-netemu`{.cmd}, which Debian and Ubuntu don't ship; see
 [](programs).
 
+![The settings of a Netemu: its ends and its
+states](figures/netemu-settings.png){alt="The settings of ne1: Left end, sw1, and Right end, sw2; under States, good, 125000 bytes/s · 10 ms · 0 % lost, selected; bad, 12500 bytes/s · 200 ms · 5 % lost; and down, 125000 bytes/s · 0 ms · 100 % lost; then the buttons + and − and the line The emulator starts in the first state."}
+
 ## Ends {#ends}
 
 **Left end**, **Right end**
@@ -37,6 +40,9 @@ of moving to it. The **−** button removes the selected state, unless it is the
 only one.
 
 ## Values {#values}
+
+![The values of the state
+good](figures/netemu-values.png){alt="Under Values, those of good, the state selected: Name, good; Bandwidth, 125000; Delay, 10; Buffer, 75000; Loss, 0.00. Each has its number from left to right, →, then its number from right to left, ←, greyed and the same, and the switch Both ways, on."}
 
 The values of the selected state:
 
@@ -71,6 +77,9 @@ link that differs each way, as an ADSL line.
 
 ## Transitions {#transitions}
 
+![The transitions between good, bad and
+down](figures/netemu-transitions.png){alt="Under Transitions: Period, 1000; then Chances, a grid from a row to a column, with good, bad and down. From good, 5.00 to bad and 1.00 to down, and 94 % stays; from bad, 50.00 to good and 5.00 to down, and 45 % stays; from down, 20.00 to good and 0.00 to bad, and 80 % stays."}
+
 **Period**
 
 :   How often, in milliseconds, the link may change state; 100 by default.
@@ -87,10 +96,13 @@ link that differs each way, as an ADSL line.
 With a single state, the link keeps its values.
 
 ::: note
-Two states, `good`{.sys} and `bad`{.sys}, and a period of 1000 ms. From
-`good`{.sys} to `bad`{.sys} 5 %, from `bad`{.sys} to `good`{.sys} 50 %: each
-second, a good link turns bad once in twenty times, so after 20 seconds on
-average, and a bad one recovers after 2 seconds on average.
+The three states of the pictures, and a period of 1000 ms: `good`{.sys};
+`bad`{.sys}, slow, late and lossy; and `down`{.sys}, which loses every packet.
+From `good`{.sys}, 5 % to `bad`{.sys} and 1 % to `down`{.sys}; from
+`bad`{.sys}, 50 % to `good`{.sys} and 5 % to `down`{.sys}; from `down`{.sys},
+20 % to `good`{.sys}. Each second, a good link turns bad once in twenty times
+and goes down once in a hundred; a bad one recovers half of the times; and a
+link that is down comes back after 5 seconds on average.
 :::
 
 ## While it runs {#running}

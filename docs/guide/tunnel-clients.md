@@ -14,6 +14,8 @@ network, through an encrypted link. The tunnel client is the end that connects
 to a tunnel server on the other computer. Both run `vde_cryptcab`{.cmd}. See
 [](tunnel-servers) for the other end.
 
+![The settings of a tunnel client](figures/tunnel-client-settings.png){alt="The settings of tc1: Plugged into, sw1; Server, 192.0.2.10; Server port, 7667; Local port, 10771; Password, hidden as dots."}
+
 ## Connection {#connection}
 
 **Plugged into**

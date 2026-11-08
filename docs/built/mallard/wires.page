@@ -10,6 +10,12 @@
   </info>
   <title>Wires</title>
   <p>A wire is a cable between two switches: what one of them sends to the other, the wire passes on, both ways. It runs <cmd>dpipe</cmd>, which joins two <cmd>vde_plug</cmd>, one in each switch.</p>
+  <figure>
+    <title>The settings of a wire</title>
+    <media type="image" mime="image/png" src="figures/wire-settings.png">
+      <p>The settings of w1: Left end, sw1, and Right end, sw2.</p>
+    </media>
+  </figure>
   <section id="ends">
     <title>Ends</title>
     <terms>

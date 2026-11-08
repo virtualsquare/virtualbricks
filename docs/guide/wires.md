@@ -14,6 +14,8 @@ A wire is a cable between two switches: what one of them sends to the other,
 the wire passes on, both ways. It runs `dpipe`{.cmd}, which joins two
 `vde_plug`{.cmd}, one in each switch.
 
+![The settings of a wire](figures/wire-settings.png){alt="The settings of w1: Left end, sw1, and Right end, sw2."}
+
 ## Ends {#ends}
 
 **Left end**, **Right end**

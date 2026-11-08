@@ -10,6 +10,12 @@
   </info>
   <title>Switches</title>
   <p>A switch is a VDE switch, as an Ethernet switch: the other bricks plug into its ports. A virtual machine plugs a network card into it, a wire joins it to another switch, a tap joins this computer to it. A switch needs nothing else to start. It runs <cmd>vde_switch</cmd>.</p>
+  <figure>
+    <title>The settings of sw1, with tap1 and vm1 plugged into it</title>
+    <media type="image" mime="image/png" src="figures/switch-ports.png">
+      <p>The settings of sw1: Ports, 32, with the line Number of ports · at least 3: tap1, vm1 plug into sw1 under it; Hub mode and Fast spanning tree, off.</p>
+    </media>
+  </figure>
   <section id="ports">
     <title>Ports</title>
     <terms>

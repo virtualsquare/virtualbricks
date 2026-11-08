@@ -9,6 +9,12 @@
   </info>
   <title>Tunnel servers</title>
   <p>A tunnel joins a switch of this computer to a switch of another one, over the network, through an encrypted link. It has two ends: a tunnel server, which waits on a UDP port, and a tunnel client, on the other computer, which connects to that port. Both run <cmd>vde_cryptcab</cmd>. See <link xref="tunnel-clients"/> for the other end.</p>
+  <figure>
+    <title>The settings of a tunnel server</title>
+    <media type="image" mime="image/png" src="figures/tunnel-server-settings.png">
+      <p>The settings of tl1: Plugged into, sw1; Port, 7667; Password, hidden as dots.</p>
+    </media>
+  </figure>
   <section id="connection">
     <title>Connection</title>
     <terms>

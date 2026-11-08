@@ -15,6 +15,8 @@ ports. A virtual machine plugs a network card into it, a wire joins it to
 another switch, a tap joins this computer to it. A switch needs nothing else to
 start. It runs `vde_switch`{.cmd}.
 
+![The settings of sw1, with tap1 and vm1 plugged into it](figures/switch-ports.png){alt="The settings of sw1: Ports, 32, with the line Number of ports · at least 3: tap1, vm1 plug into sw1 under it; Hub mode and Fast spanning tree, off."}
+
 ## Ports {#ports}
 
 **Ports**

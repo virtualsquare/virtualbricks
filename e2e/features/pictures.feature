@@ -36,13 +36,229 @@ Feature: The pictures of the user guide
     Then the picture switch-settings shows the main window
 
   @needs-qemu-system-i386
-  Scenario: The settings of a virtual machine, on its page Machine
-    Given Virtualbricks is running
-    When I add the switch sw1
-    And I add the virtual machine vm1
-    And I connect vm1 to sw1, with Connect To in its menu
-    And I open the settings of vm1, on its page Machine
-    Then the picture machine-settings shows the main window
+  Scenario: The settings of sw1, with tap1 and the two cards of vm1 plugged into it
+    Given the project new_project has the project.toml
+      """
+      format = 1
+
+      [bricks.sw1]
+      type = "switch"
+
+      [bricks.tap1]
+      type = "tap"
+      connect = "sw1"
+
+      [bricks.vm1]
+      type = "qemu"
+      nics = [
+          {kind = "plug", connect = "sw1", mac = "52:54:00:12:34:01"},
+          {kind = "plug", connect = "sw1", mac = "52:54:00:12:34:02"},
+      ]
+      """
+    And Virtualbricks is running
+    When I open the tab Bricks
+    And I open the settings of sw1
+    Then the picture switch-ports shows the main window
+
+  Scenario: The settings of the switch wrapper wr1, on the control folder /tmp/lab-switch
+    Given the project new_project has the project.toml
+      """
+      format = 1
+
+      [bricks.wr1]
+      type = "switchwrapper"
+      socket_path = "/tmp/lab-switch"
+      """
+    And Virtualbricks is running
+    When I open the tab Bricks
+    And I open the settings of wr1
+    Then the picture switch-wrapper-settings shows the main window
+
+  @needs-dpipe @needs-vde_plug
+  Scenario: The settings of the wire w1, between sw1 and sw2
+    Given the project new_project has the project.toml
+      """
+      format = 1
+
+      [bricks.sw1]
+      type = "switch"
+
+      [bricks.sw2]
+      type = "switch"
+
+      [bricks.w1]
+      type = "wire"
+      endpoints = ["sw1", "sw2"]
+      """
+    And Virtualbricks is running
+    When I open the tab Bricks
+    And I open the settings of w1
+    Then the picture wire-settings shows the main window
+
+  @needs-vde-netemu
+  Scenario Outline: The settings of the Netemu ne1, between sw1 and sw2, with the states good, bad and down, scrolled to <section>
+    Given the project new_project has the project.toml
+      """
+      format = 1
+
+      [bricks.sw1]
+      type = "switch"
+
+      [bricks.sw2]
+      type = "switch"
+
+      [bricks.ne1]
+      type = "netemu"
+      endpoints = ["sw1", "sw2"]
+      transition_period = 1000
+      transitions = [
+          [0.0, 5.0, 1.0],
+          [50.0, 0.0, 5.0],
+          [20.0, 0.0, 0.0],
+      ]
+
+      [[bricks.ne1.states]]
+      name = "good"
+      bandwidth = 125000
+      delay = 10
+
+      [[bricks.ne1.states]]
+      name = "bad"
+      bandwidth = 12500
+      delay = 200
+      loss = 5.0
+
+      [[bricks.ne1.states]]
+      name = "down"
+      loss = 100.0
+      """
+    And Virtualbricks is running
+    When I open the tab Bricks
+    And I open the settings of ne1
+    And I scroll the settings of ne1 to <section>
+    Then the picture <picture> shows the main window
+
+    Examples:
+      | section     | picture            |
+      | Ends        | netemu-settings    |
+      | Values      | netemu-values      |
+      | Transitions | netemu-transitions |
+
+  @needs-vde_cryptcab
+  Scenario: The settings of the tunnel server tl1, on sw1, with a password
+    Given the project new_project has the project.toml
+      """
+      format = 1
+
+      [bricks.sw1]
+      type = "switch"
+
+      [bricks.tl1]
+      type = "tunnellisten"
+      connect = "sw1"
+      password = "lab password"
+      """
+    And Virtualbricks is running
+    When I open the tab Bricks
+    And I open the settings of tl1
+    Then the picture tunnel-server-settings shows the main window
+
+  @needs-vde_cryptcab
+  Scenario: The settings of the tunnel client tc1, on sw1, to the server 192.0.2.10
+    Given the project new_project has the project.toml
+      """
+      format = 1
+
+      [bricks.sw1]
+      type = "switch"
+
+      [bricks.tc1]
+      type = "tunnelconnect"
+      connect = "sw1"
+      server_host = "192.0.2.10"
+      password = "lab password"
+      """
+    And Virtualbricks is running
+    When I open the tab Bricks
+    And I open the settings of tc1
+    Then the picture tunnel-client-settings shows the main window
+
+  @needs-vde_plug2tap
+  Scenario: The settings of the tap tap1, on sw1, with a manual address
+    Given the project new_project has the project.toml
+      """
+      format = 1
+
+      [bricks.sw1]
+      type = "switch"
+
+      [bricks.tap1]
+      type = "tap"
+      connect = "sw1"
+      address_mode = "manual"
+      ip_address = "10.0.0.254"
+      """
+    And Virtualbricks is running
+    When I open the tab Bricks
+    And I open the settings of tap1
+    Then the picture tap-settings shows the main window
+
+  @needs-vde_pcapplug
+  Scenario: The settings of the capture interface cap1, on sw1, of eth0
+    Given the project new_project has the project.toml
+      """
+      format = 1
+
+      [bricks.sw1]
+      type = "switch"
+
+      [bricks.cap1]
+      type = "capture"
+      connect = "sw1"
+      interface = "eth0"
+      """
+    And Virtualbricks is running
+    When I open the tab Bricks
+    And I open the settings of cap1
+    Then the picture capture-settings shows the main window
+
+  @needs-qemu-img @needs-qemu-system-i386
+  Scenario Outline: The settings of vm1, with debian on hda and eth0 on sw1, on its page <page>
+    Given lsusb lists the USB devices
+      """
+      Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+      Bus 001 Device 002: ID 0781:5567 SanDisk Corp. Cruzer Blade
+      """
+    And the empty disk image debian.qcow2 of 1 GB, in my home folder
+    And the files of my home folder were last changed on 2024-08-02
+    And the project new_project has the project.toml
+      """
+      format = 1
+
+      [bricks.sw1]
+      type = "switch"
+
+      [bricks.vm1]
+      type = "qemu"
+      nics = [{kind = "plug", connect = "sw1", mac = "52:54:00:12:34:01"}]
+      """
+    And Virtualbricks is running
+    When I add an existing image, debian.qcow2 of my home folder, used where it is, with the name it suggests, debian
+    And I open the tab Bricks
+    And I give vm1 the image debian, on its disk hda
+    And I open the settings of vm1, on its page <page>
+    Then the picture <picture> shows the main window
+
+    Examples:
+      | page            | picture          |
+      | Machine         | machine-settings |
+      | Disks           | machine-disks    |
+      | CD-ROM and boot | machine-cdrom    |
+      | Network         | machine-network  |
+      | Display         | machine-display  |
+      | Sound and USB   | machine-sound    |
+      | Kernel          | machine-kernel   |
+      | Advanced        | machine-advanced |
 
   @needs-qemu-img @needs-qemu-system-i386
   Scenario: The Images tab: debian, which vm1 and vm2 use, vm1 running, and scratch, which no disk uses

@@ -10,6 +10,12 @@
   </info>
   <title>Taps</title>
   <p>A tap is a network interface of this computer, plugged into a switch of the lab: through it this computer joins the lab, as one more machine on that switch. The interface takes the name of the brick, as <sys>tap1</sys>, so the name of a tap has 15 characters at most. It runs <cmd>vde_plug2tap</cmd> as root, through <cmd>sudo</cmd>; see <link xref="problems#sudo"/>.</p>
+  <figure>
+    <title>The settings of a tap, with a manual address</title>
+    <media type="image" mime="image/png" src="figures/tap-settings.png">
+      <p>The settings of tap1: Plugged into, sw1; Address, Manual, with the line Virtualbricks doesn't set it yet under it; IP address, 10.0.0.254; Netmask, 255.255.255.0; Gateway, empty.</p>
+    </media>
+  </figure>
   <section id="connection">
     <title>Connection</title>
     <terms>

@@ -10,6 +10,12 @@
   </info>
   <title>Capture interfaces</title>
   <p>A capture interface joins a switch of the lab to a network interface that this computer has already, as its Ethernet card: the packets of that interface go into the switch, and those of the switch go out of the interface. It runs <cmd>vde_pcapplug</cmd> as root, through <cmd>sudo</cmd>; see <link xref="problems#sudo"/>.</p>
+  <figure>
+    <title>The settings of a capture interface</title>
+    <media type="image" mime="image/png" src="figures/capture-settings.png">
+      <p>The settings of cap1: Plugged into, sw1; Interface, eth0.</p>
+    </media>
+  </figure>
   <section id="connection">
     <title>Connection</title>
     <terms>

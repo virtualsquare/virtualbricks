@@ -14,6 +14,7 @@ The steps of a user:
 | `Given Virtualbricks is running` | Starts Virtualbricks, and waits for its main window |
 | `Given vde_cryptcab isn't on this computer` | Before Virtualbricks starts: its `PATH` is a folder of links to the programs of that of the tests but this one, so it finds it only in a folder of its settings that has it |
 | `Given gnome-terminal is a terminal of the tests` | Before Virtualbricks starts: `gnome-terminal` of its `PATH` is a script that writes the words it gets in the file `gnome-terminal.argv` of the scenario, and opens no window; the program of this computer, if there is one, never runs |
+| `Given lsusb lists the USB devices`, with the lines of `lsusb` under it | Before Virtualbricks starts: `lsusb` of its `PATH` is a script that writes those lines, so that **Sound and USB**, in the settings of a machine, lists the same devices on every computer, not those plugged into this one |
 | `Given Virtualbricks is running with --listen` | Starts it with the options, as the shell splits them, in place of `--lock none`, and waits for its main window; with `--listen` alone, until it listens on the socket of its workspace too. With `--connect`, these are the windows of the other Virtualbricks, which runs the bricks: see the steps of another Virtualbricks |
 | `When I add the switch sw1` | New Brick, the kind, then OK on its settings; the new brick must be named `sw1`. Any kind of New Brick: `the virtual machine vm1`, `the router r1`, … |
 | `When I join sw1 and sw2 with the wire w1` | New Brick, Wire, then sw1 for its left end and sw2 for its right end, and OK; the new wire must be named `w1` |
@@ -29,6 +30,7 @@ The steps of a user:
 | `When I turn on "No display" in the settings of vm1, on its page Display` | Configure… in its menu; the page, in the list at the left of its settings, then the switch of the setting, which must be the other way, turned on, or off with `turn off`; then OK |
 | `When I open the settings of sw1` | Configure… in its menu: its settings show, in place of the list, as they are |
 | `When I open the settings of vm1, on its page Machine` | The same, then the page, in the list at the left of its settings |
+| `When I scroll the settings of ne1 to Values` | The wheel over the settings of the brick, which show, until the title of the section is at their top, as far as a turn goes, or until they are at their bottom |
 | `When I choose "x86_64" for "Program" in the settings of vm1, on its page Machine` | Configure… in its menu; the page, in the list at the left of its settings, then the list of the setting, which must show another choice, and the choice; then OK |
 | `When I terminate vm1, from its menu` | Process and its number, in its menu, then Terminate: SIGTERM, which a machine stops at, where its Stop asks the system of the machine to stop; then it can start again, and the processes of its start have quit |
 | `When I pause vm1, from its menu` | Process and its number, in its menu, then Pause: SIGSTOP, which stops the processes of the brick; its row still says Running |

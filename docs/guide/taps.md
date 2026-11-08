@@ -16,6 +16,8 @@ switch. The interface takes the name of the brick, as `tap1`{.sys}, so the name
 of a tap has 15 characters at most. It runs `vde_plug2tap`{.cmd} as root,
 through `sudo`{.cmd}; see [](problems#sudo).
 
+![The settings of a tap, with a manual address](figures/tap-settings.png){alt="The settings of tap1: Plugged into, sw1; Address, Manual, with the line Virtualbricks doesn't set it yet under it; IP address, 10.0.0.254; Netmask, 255.255.255.0; Gateway, empty."}
+
 ## Connection {#connection}
 
 **Plugged into**

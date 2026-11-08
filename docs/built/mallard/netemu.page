@@ -9,6 +9,12 @@
   </info>
   <title>Netemu</title>
   <p>A Netemu is a wire that emulates a network link. The packets between its two switches wait in a buffer, which drains at the bandwidth of the link; they take its delay, and some are lost. The link has states, each with its own values, and it moves between them by chance, as a link that degrades and recovers. It runs <cmd>vde-netemu</cmd>, which Debian and Ubuntu don't ship; see <link xref="programs"/>.</p>
+  <figure>
+    <title>The settings of a Netemu: its ends and its states</title>
+    <media type="image" mime="image/png" src="figures/netemu-settings.png">
+      <p>The settings of ne1: Left end, sw1, and Right end, sw2; under States, good, 125000 bytes/s · 10 ms · 0 % lost, selected; bad, 12500 bytes/s · 200 ms · 5 % lost; and down, 125000 bytes/s · 0 ms · 100 % lost; then the buttons + and − and the line The emulator starts in the first state.</p>
+    </media>
+  </figure>
   <section id="ends">
     <title>Ends</title>
     <terms>
@@ -25,6 +31,12 @@
   </section>
   <section id="values">
     <title>Values</title>
+    <figure>
+      <title>The values of the state good</title>
+      <media type="image" mime="image/png" src="figures/netemu-values.png">
+        <p>Under Values, those of good, the state selected: Name, good; Bandwidth, 125000; Delay, 10; Buffer, 75000; Loss, 0.00. Each has its number from left to right, →, then its number from right to left, ←, greyed and the same, and the switch Both ways, on.</p>
+      </media>
+    </figure>
     <p>The values of the selected state:</p>
     <terms>
       <item>
@@ -52,6 +64,12 @@
   </section>
   <section id="transitions">
     <title>Transitions</title>
+    <figure>
+      <title>The transitions between good, bad and down</title>
+      <media type="image" mime="image/png" src="figures/netemu-transitions.png">
+        <p>Under Transitions: Period, 1000; then Chances, a grid from a row to a column, with good, bad and down. From good, 5.00 to bad and 1.00 to down, and 94 % stays; from bad, 50.00 to good and 5.00 to down, and 45 % stays; from down, 20.00 to good and 0.00 to bad, and 80 % stays.</p>
+      </media>
+    </figure>
     <terms>
       <item>
         <title><gui>Period</gui></title>
@@ -64,7 +82,7 @@
     </terms>
     <p>With a single state, the link keeps its values.</p>
     <note>
-      <p>Two states, <sys>good</sys> and <sys>bad</sys>, and a period of 1000 ms. From <sys>good</sys> to <sys>bad</sys> 5 %, from <sys>bad</sys> to <sys>good</sys> 50 %: each second, a good link turns bad once in twenty times, so after 20 seconds on average, and a bad one recovers after 2 seconds on average.</p>
+      <p>The three states of the pictures, and a period of 1000 ms: <sys>good</sys>; <sys>bad</sys>, slow, late and lossy; and <sys>down</sys>, which loses every packet. From <sys>good</sys>, 5 % to <sys>bad</sys> and 1 % to <sys>down</sys>; from <sys>bad</sys>, 50 % to <sys>good</sys> and 5 % to <sys>down</sys>; from <sys>down</sys>, 20 % to <sys>good</sys>. Each second, a good link turns bad once in twenty times and goes down once in a hundred; a bad one recovers half of the times; and a link that is down comes back after 5 seconds on average.</p>
     </note>
   </section>
   <section id="running">

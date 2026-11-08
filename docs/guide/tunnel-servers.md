@@ -15,6 +15,8 @@ waits on a UDP port, and a tunnel client, on the other computer, which
 connects to that port. Both run `vde_cryptcab`{.cmd}. See [](tunnel-clients)
 for the other end.
 
+![The settings of a tunnel server](figures/tunnel-server-settings.png){alt="The settings of tl1: Plugged into, sw1; Port, 7667; Password, hidden as dots."}
+
 ## Connection {#connection}
 
 **Plugged into**

@@ -15,9 +15,6 @@ processors and its memory; **Disks**; **CD-ROM and boot**; **Network**;
 **Display**; **Sound and USB**; **Kernel**, to boot a kernel of your own; and
 **Advanced**.
 
-![The settings of a virtual
-machine](figures/machine-settings.png){alt="The settings of vm1: the line at the top names its QEMU, the sections are at the left, and the section Machine shows Program, Machine type, CPU model, KVM, Virtual CPUs and Memory."}
-
 The line at the top says which QEMU will run the machine, and its version. The
 lists of machine types, CPU models, sound cards and network cards are what
 that QEMU has. When the program isn't there, the line says so, and the lists
@@ -28,6 +25,8 @@ the machine starts without it, and the **Logs** window says so.
 The settings take effect when the machine starts again.
 
 ## Machine {#machine}
+
+![The section Machine](figures/machine-settings.png){alt="The settings of vm1: the line at the top names its QEMU, the sections are at the left, and the section Machine shows Program, Machine type, CPU model, KVM, Virtual CPUs and Memory."}
 
 **Program**
 
@@ -75,6 +74,8 @@ The settings take effect when the machine starts again.
 
 ## Disks {#disks}
 
+![The section Disks](figures/machine-disks.png){alt="The section Disks of vm1: the disk hda with the image debian, qcow2, a disk of 1.0 GB, used as a Private copy, and the line under it, vm1's changes will be kept in vm1_hda.cow, made at the next start; debian stays as it is. Add Disk under it, then Changes: Forget the changes and Virtio disks, off."}
+
 **Add Disk** adds a disk on the first free device: `hda`{.sys} to
 `hdd`{.sys}, the floppies `fda`{.sys} and `fdb`{.sys}, and `mtdblock`{.sys}.
 Each disk chooses its image in a list of the images of the project, which says
@@ -117,6 +118,8 @@ their progress, and can be stopped.
 
 ## CD-ROM and boot {#cdrom}
 
+![The section CD-ROM and boot](figures/machine-cdrom.png){alt="The section CD-ROM and boot of vm1: CD-ROM, Nothing, so Image and Drive are greyed; Boot from, The default."}
+
 **CD-ROM**
 
 :   What the CD-ROM holds: **Nothing**, the default; **An image**, a file as
@@ -138,6 +141,8 @@ their progress, and can be stopped.
     **The first disk**; **The CD-ROM**; **The floppy**; or **The network**.
 
 ## Network cards {#network}
+
+![The section Network](figures/machine-network.png){alt="The section Network of vm1: the card eth0, with the button that removes it; Model, rtl8139; MAC address, 52:54:00:12:34:01, with the button that makes another; Plugged into, sw1. Add Card under it."}
 
 **Add Card** adds a card after the others. The cards are in the order the
 machine sees them, the first one first, `eth0`{.sys} in the settings. The
@@ -172,6 +177,8 @@ button at the end of a card removes it. Each card has:
 
 ## Display {#display}
 
+![The section Display](figures/machine-display.png){alt="The section Display of vm1: No display, Standard VGA, VNC and SDL window, off, and VNC display, 1, greyed; Keyboard layout, empty, at the bottom."}
+
 **No display**
 
 :   The machine has no screen at all: only its console, and its serial port.
@@ -198,6 +205,8 @@ button at the end of a card removes it. Each card has:
 
 ## Sound and USB {#sound}
 
+![The section Sound and USB](figures/machine-sound.png){alt="The section Sound and USB of vm1: Sound card, None; Audio driver, alsa; USB, off; and under USB devices, greyed, 1d6b:0002, Linux Foundation 2.0 root hub, and 0781:5567, SanDisk Corp. Cruzer Blade, each with its switch."}
+
 **Sound card**
 
 :   **None**, the default; **PC speaker**; or one of the sound cards of this
@@ -219,6 +228,8 @@ button at the end of a card removes it. Each card has:
     not on this host. QEMU runs as you: it needs the right to open the device.
 
 ## Kernel {#kernel}
+
+![The section Kernel](figures/machine-kernel.png){alt="The section Kernel of vm1: Boot a kernel, off, so Kernel, Initial ramdisk, Ramdisk and Command line are greyed; under Debugging, GDB, off."}
 
 **Boot a kernel**
 
@@ -243,6 +254,8 @@ button at the end of a card removes it. Each card has:
     default. In GDB, `target remote localhost:1234`{.cmd}. Off by default.
 
 ## Advanced {#advanced}
+
+![The section Advanced](figures/machine-advanced.png){alt="The section Advanced of vm1: Local time, Drift fix and Serial socket, off; Icon, empty, with the button that chooses a file."}
 
 **Local time**
 

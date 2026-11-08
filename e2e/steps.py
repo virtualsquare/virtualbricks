@@ -266,6 +266,19 @@ def program_missing(virtualbricks, program):
     virtualbricks.hidden.add(program)
 
 
+@given(words("lsusb lists the USB devices"))
+def lsusb_lists(virtualbricks, docstring):
+    """
+    lsusb, on the PATH of Virtualbricks, is a script that writes the lines
+    under the step, as lsusb lists the USB devices of a computer: the
+    settings of a machine show those, not the devices of this computer.
+    """
+
+    virtualbricks.replaced["lsusb"] = (
+        f"#!/bin/sh\ncat <<'EOF'\n{docstring}\nEOF\n"
+    )
+
+
 # A terminal of the tests: the words it gets, as JSON, in a file, written
 # whole, and no window
 TERMINAL_SCRIPT = """\
@@ -790,6 +803,21 @@ def open_brick_settings_page(virtualbricks, name, page):
 
     open_brick_settings(virtualbricks, name)
     settings_page(virtualbricks, page)
+
+
+@when(words("I scroll the settings of {name:Brick} to {section}"))
+def scroll_settings(virtualbricks, name, section):
+    """
+    The wheel over the settings of the brick, which show, until the title
+    of the section is at their top, or they are at their bottom.
+    """
+
+    virtualbricks.find("label", name)
+    virtualbricks.find("button", "OK")
+    # the settings are the tallest of the panes that scroll
+    panes = harness.a11y.find_all(virtualbricks.app, "scroll pane")
+    pane = max(panes, key=lambda pane: harness.a11y.extents(pane)[3])
+    virtualbricks.scroll_to("label", section, pane)
 
 
 def settings_page(virtualbricks, page):
