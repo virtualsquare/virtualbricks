@@ -139,10 +139,10 @@ Feature: The pictures of the user guide
     Then the picture <picture> shows the main window
 
     Examples:
-      | section     | picture            |
-      | Ends        | netemu-settings    |
-      | Values      | netemu-values      |
-      | Transitions | netemu-transitions |
+      | section                         | picture            |
+      | Ends                            | netemu-settings    |
+      | Values of the selected state    | netemu-values      |
+      | Transitions of the Markov chain | netemu-transitions |
 
   @needs-vde_cryptcab
   Scenario: The settings of the tunnel server tl1, on sw1, with a password

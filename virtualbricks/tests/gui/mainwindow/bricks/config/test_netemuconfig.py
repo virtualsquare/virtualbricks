@@ -76,6 +76,22 @@ class TestItsParts(NetemuPanelTestCase):
         )
         self.assertEqual(self.rows["period"].control.get_value(), 100)
 
+    def test_the_titles(self):
+        # the states and the transitions are of a Markov chain
+        self.assertEqual(
+            [
+                child.get_text()
+                for child in self.panel.form.widget.get_children()
+                if isinstance(child, Gtk.Label)
+            ],
+            [
+                "Ends",
+                "States of the Markov chain",
+                "Values of the selected state",
+                "Transitions of the Markov chain",
+            ],
+        )
+
     def test_the_states(self):
         rows = self.state_rows()
         self.assertEqual(

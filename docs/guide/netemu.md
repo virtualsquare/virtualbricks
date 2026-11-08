@@ -12,12 +12,12 @@ sort: 5
 A Netemu is a wire that emulates a network link. The packets between its two
 switches wait in a buffer, which drains at the bandwidth of the link; they take
 its delay, and some are lost. The link has states, each with its own values,
-and it moves between them by chance, as a link that degrades and recovers. It
-runs `vde-netemu`{.cmd}, which Debian and Ubuntu don't ship; see
-[](programs).
+and it moves between them by chance, as a link that degrades and recovers: the
+states and the transitions between them are a Markov chain. It runs
+`vde-netemu`{.cmd}, which Debian and Ubuntu don't ship; see [](programs).
 
 ![The settings of a Netemu: its ends and its
-states](figures/netemu-settings.png){alt="The settings of ne1: Left end, sw1, and Right end, sw2; under States, good, 125000 bytes/s · 10 ms · 0 % lost, selected; bad, 12500 bytes/s · 200 ms · 5 % lost; and down, 125000 bytes/s · 0 ms · 100 % lost; then the buttons + and − and the line The emulator starts in the first state."}
+states](figures/netemu-settings.png){alt="The settings of ne1: Left end, sw1, and Right end, sw2; under States of the Markov chain, good, 125000 bytes/s · 10 ms · 0 % lost, selected; bad, 12500 bytes/s · 200 ms · 5 % lost; and down, 125000 bytes/s · 0 ms · 100 % lost; then the buttons + and − and the line The emulator starts in the first state."}
 
 ## Ends {#ends}
 
@@ -28,21 +28,22 @@ states](figures/netemu-settings.png){alt="The settings of ne1: Left end, sw1, an
     right to left. The socket card of a virtual machine can only be the right
     end.
 
-## States {#states}
+## States of the Markov chain {#states}
 
 The list has the states of the link, each with its name and its values, as
 `125000 bytes/s · 0 ms · 0 % lost`. The link starts in the first state. Select
-a state to see its values, and to change them, under **Values**.
+a state to see its values, and to change them, under **Values of the
+selected state**.
 
 The **+** button under the list adds a state after the selected one, named
 `state 2`{.sys} or the next free number, with the default values and no chance
 of moving to it. The **−** button removes the selected state, unless it is the
 only one.
 
-## Values {#values}
+## Values of the selected state {#values}
 
 ![The values of the state
-good](figures/netemu-values.png){alt="Under Values, those of good, the state selected: Name, good; Bandwidth, 125000; Delay, 10; Buffer, 75000; Loss, 0.00. Each has its number from left to right, →, then its number from right to left, ←, greyed and the same, and the switch Both ways, on."}
+good](figures/netemu-values.png){alt="Under Values of the selected state, those of good: Name, good; Bandwidth, 125000; Delay, 10; Buffer, 75000; Loss, 0.00. Each has its number from left to right, →, then its number from right to left, ←, greyed and the same, and the switch Both ways, on."}
 
 The values of the selected state:
 
@@ -75,10 +76,10 @@ left, and the switch **Both ways**. While it is on, the default, the value is
 the same both ways, the one of **→**, and **←** is greyed. Turn it off for a
 link that differs each way, as an ADSL line.
 
-## Transitions {#transitions}
+## Transitions of the Markov chain {#transitions}
 
 ![The transitions between good, bad and
-down](figures/netemu-transitions.png){alt="Under Transitions: Period, 1000; then Chances, a grid from a row to a column, with good, bad and down. From good, 5.00 to bad and 1.00 to down, and 94 % stays; from bad, 50.00 to good and 5.00 to down, and 45 % stays; from down, 20.00 to good and 0.00 to bad, and 80 % stays."}
+down](figures/netemu-transitions.png){alt="Under Transitions of the Markov chain: Period, 1000; then Chances, a grid from a row to a column, with good, bad and down. From good, 5.00 to bad and 1.00 to down, and 94 % stays; from bad, 50.00 to good and 5.00 to down, and 45 % stays; from down, 20.00 to good and 0.00 to bad, and 80 % stays."}
 
 **Period**
 

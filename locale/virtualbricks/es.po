@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Virtualbricks 2.0.0b1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-25 14:52+0100\n"
+"POT-Creation-Date: 2026-11-08 16:21+0100\n"
 "PO-Revision-Date: 2011-05-28 15:34+0000\n"
 "Last-Translator: marcos.gm <Unknown>\n"
 "Language-Team: Spanish <es@li.org>\n"
@@ -4073,15 +4073,15 @@ msgid "The emulator starts in the first state"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py
-msgid "States"
+msgid "States of the Markov chain"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py
-msgid "Values"
+msgid "Values of the selected state"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py
-msgid "Transitions"
+msgid "Transitions of the Markov chain"
 msgstr ""
 
 #: virtualbricks/gui/mainwindow/bricks/config/netemuconfig.py

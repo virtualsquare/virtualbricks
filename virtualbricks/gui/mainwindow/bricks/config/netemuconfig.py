@@ -17,9 +17,11 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 """
-The panel of a Netemu: its two ends; its states, a list, and the values of
-the one selected; and the chances of moving between the states, at each
-period, a row for each.
+The panel of a Netemu: its two ends; the states of its Markov chain, a list,
+and the values of the one selected; and the transitions of the chain, the
+chances of moving between the states at each period, a row for each. The
+titles of the sections say that the states and the transitions are those of
+a Markov chain.
 
 A value goes from left to right, or both ways; the one from right to left
 greys out while it's the same both ways. What a state doesn't move to, it
@@ -186,9 +188,9 @@ class NetemuPanel(Panel):
         box.pack_start(self.states, False, False, 0)
         box.pack_start(Gtk.Separator(visible=True), False, False, 0)
         box.pack_start(tools, False, False, 0)
-        form.section(_("States"), box)
+        form.section(_("States of the Markov chain"), box)
 
-        form.section(_("Values"))
+        form.section(_("Values of the selected state"))
         form.entry("name")
         form.pair(
             "bandwidth", "bandwidth_right_to_left", "bandwidth_symmetric"
@@ -199,7 +201,7 @@ class NetemuPanel(Panel):
         )
         form.pair("loss", "loss_right_to_left", "loss_symmetric")
 
-        form.section(_("Transitions"))
+        form.section(_("Transitions of the Markov chain"))
         self.period = Gtk.SpinButton(visible=True, numeric=True)
         self.period.set_range(1, MOST)
         self.period.set_increments(10, 100)

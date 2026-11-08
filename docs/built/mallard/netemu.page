@@ -8,11 +8,11 @@
     <desc>The bandwidth, delay, buffer and loss of an emulated link, in states that change by chance.</desc>
   </info>
   <title>Netemu</title>
-  <p>A Netemu is a wire that emulates a network link. The packets between its two switches wait in a buffer, which drains at the bandwidth of the link; they take its delay, and some are lost. The link has states, each with its own values, and it moves between them by chance, as a link that degrades and recovers. It runs <cmd>vde-netemu</cmd>, which Debian and Ubuntu don't ship; see <link xref="programs"/>.</p>
+  <p>A Netemu is a wire that emulates a network link. The packets between its two switches wait in a buffer, which drains at the bandwidth of the link; they take its delay, and some are lost. The link has states, each with its own values, and it moves between them by chance, as a link that degrades and recovers: the states and the transitions between them are a Markov chain. It runs <cmd>vde-netemu</cmd>, which Debian and Ubuntu don't ship; see <link xref="programs"/>.</p>
   <figure>
     <title>The settings of a Netemu: its ends and its states</title>
     <media type="image" mime="image/png" src="figures/netemu-settings.png">
-      <p>The settings of ne1: Left end, sw1, and Right end, sw2; under States, good, 125000 bytes/s · 10 ms · 0 % lost, selected; bad, 12500 bytes/s · 200 ms · 5 % lost; and down, 125000 bytes/s · 0 ms · 100 % lost; then the buttons + and − and the line The emulator starts in the first state.</p>
+      <p>The settings of ne1: Left end, sw1, and Right end, sw2; under States of the Markov chain, good, 125000 bytes/s · 10 ms · 0 % lost, selected; bad, 12500 bytes/s · 200 ms · 5 % lost; and down, 125000 bytes/s · 0 ms · 100 % lost; then the buttons + and − and the line The emulator starts in the first state.</p>
     </media>
   </figure>
   <section id="ends">
@@ -25,16 +25,16 @@
     </terms>
   </section>
   <section id="states">
-    <title>States</title>
-    <p>The list has the states of the link, each with its name and its values, as <code>125000 bytes/s · 0 ms · 0 % lost</code>. The link starts in the first state. Select a state to see its values, and to change them, under <gui>Values</gui>.</p>
+    <title>States of the Markov chain</title>
+    <p>The list has the states of the link, each with its name and its values, as <code>125000 bytes/s · 0 ms · 0 % lost</code>. The link starts in the first state. Select a state to see its values, and to change them, under <gui>Values of the selected state</gui>.</p>
     <p>The <gui>+</gui> button under the list adds a state after the selected one, named <sys>state 2</sys> or the next free number, with the default values and no chance of moving to it. The <gui>−</gui> button removes the selected state, unless it is the only one.</p>
   </section>
   <section id="values">
-    <title>Values</title>
+    <title>Values of the selected state</title>
     <figure>
       <title>The values of the state good</title>
       <media type="image" mime="image/png" src="figures/netemu-values.png">
-        <p>Under Values, those of good, the state selected: Name, good; Bandwidth, 125000; Delay, 10; Buffer, 75000; Loss, 0.00. Each has its number from left to right, →, then its number from right to left, ←, greyed and the same, and the switch Both ways, on.</p>
+        <p>Under Values of the selected state, those of good: Name, good; Bandwidth, 125000; Delay, 10; Buffer, 75000; Loss, 0.00. Each has its number from left to right, →, then its number from right to left, ←, greyed and the same, and the switch Both ways, on.</p>
       </media>
     </figure>
     <p>The values of the selected state:</p>
@@ -63,11 +63,11 @@
     <p>Each value has two numbers, <gui>→</gui> from left to right and <gui>←</gui> from right to left, and the switch <gui>Both ways</gui>. While it is on, the default, the value is the same both ways, the one of <gui>→</gui>, and <gui>←</gui> is greyed. Turn it off for a link that differs each way, as an ADSL line.</p>
   </section>
   <section id="transitions">
-    <title>Transitions</title>
+    <title>Transitions of the Markov chain</title>
     <figure>
       <title>The transitions between good, bad and down</title>
       <media type="image" mime="image/png" src="figures/netemu-transitions.png">
-        <p>Under Transitions: Period, 1000; then Chances, a grid from a row to a column, with good, bad and down. From good, 5.00 to bad and 1.00 to down, and 94 % stays; from bad, 50.00 to good and 5.00 to down, and 45 % stays; from down, 20.00 to good and 0.00 to bad, and 80 % stays.</p>
+        <p>Under Transitions of the Markov chain: Period, 1000; then Chances, a grid from a row to a column, with good, bad and down. From good, 5.00 to bad and 1.00 to down, and 94 % stays; from bad, 50.00 to good and 5.00 to down, and 45 % stays; from down, 20.00 to good and 0.00 to bad, and 80 % stays.</p>
       </media>
     </figure>
     <terms>
