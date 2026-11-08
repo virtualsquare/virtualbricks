@@ -32,6 +32,7 @@ from virtualbricks.i18n import _
 class CapturePanel(Panel):
     """The settings of a capture."""
 
+    help_page = "capture-interfaces"
     draft: CaptureDraft
 
     def build(self, form: Form) -> None:

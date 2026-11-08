@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Netemu — Virtualbricks Help</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="page guide">
+<main>
+<div class="trail">
+<p><a href="index.html">Virtualbricks Help</a> › <a
+href="index.html#kinds">Each kind of brick</a></p>
+</div>
+<h1>Netemu</h1>
+<p>A Netemu is a wire that emulates a network link. The packets between
+its two switches wait in a buffer, which drains at the bandwidth of the
+link; they take its delay, and some are lost. The link has states, each
+with its own values, and it moves between them by chance, as a link that
+degrades and recovers. It runs <code class="cmd">vde-netemu</code>,
+which Debian and Ubuntu don't ship; see <a href="programs.html">The
+programs it needs</a>.</p>
+<h2 id="ends">Ends</h2>
+<dl>
+<dt><span class="gui">Left end</span>, <span class="gui">Right
+end</span></dt>
+<dd>
+<p>The switches at the two ends, as those of a wire: see <a
+href="wires.html#ends">Ends</a>. The values go from left to right, from
+the left end to the right one, and from right to left. The socket card
+of a virtual machine can only be the right end.</p>
+</dd>
+</dl>
+<h2 id="states">States</h2>
+<p>The list has the states of the link, each with its name and its
+values, as <code>125000 bytes/s · 0 ms · 0 % lost</code>. The link
+starts in the first state. Select a state to see its values, and to
+change them, under <span class="gui">Values</span>.</p>
+<p>The <span class="gui">+</span> button under the list adds a state
+after the selected one, named <code class="sys">state 2</code> or the
+next free number, with the default values and no chance of moving to it.
+The <span class="gui">−</span> button removes the selected state, unless
+it is the only one.</p>
+<h2 id="values">Values</h2>
+<p>The values of the selected state:</p>
+<dl>
+<dt><span class="gui">Name</span></dt>
+<dd>
+<p>The name of the state, in the list and in the grid of the
+transitions. Two states can't have the same name.</p>
+</dd>
+<dt><span class="gui">Bandwidth</span></dt>
+<dd>
+<p>Bytes per second at which the buffer drains, 0 for no limit; 125000
+by default, a megabit per second.</p>
+</dd>
+<dt><span class="gui">Delay</span></dt>
+<dd>
+<p>The delay, in milliseconds, that a packet takes one way, on top of
+its time in the buffer; 0 by default.</p>
+</dd>
+<dt><span class="gui">Buffer</span></dt>
+<dd>
+<p>Bytes that the buffer holds, 0 for no limit; 75000 by default.</p>
+</dd>
+<dt><span class="gui">Loss</span></dt>
+<dd>
+<p>The percentage of packets lost, from 0 to 100, as 0.1 for one in a
+thousand; 0 by default.</p>
+</dd>
+</dl>
+<p>Each value has two numbers, <span class="gui">→</span> from left to
+right and <span class="gui">←</span> from right to left, and the switch
+<span class="gui">Both ways</span>. While it is on, the default, the
+value is the same both ways, the one of <span class="gui">→</span>, and
+<span class="gui">←</span> is greyed. Turn it off for a link that
+differs each way, as an ADSL line.</p>
+<h2 id="transitions">Transitions</h2>
+<dl>
+<dt><span class="gui">Period</span></dt>
+<dd>
+<p>How often, in milliseconds, the link may change state; 100 by
+default.</p>
+</dd>
+<dt><span class="gui">Chances</span></dt>
+<dd>
+<p>A grid with a row and a column for each state. The number in the row
+of a state and the column of another is the chance, in %, of moving from
+the first to the second at each period. What a state doesn't give to the
+others it keeps: its own cell, greyed, says how much, as
+<code>90 % stays</code>. The chances of a row add up to 100 % at most;
+more is an error, which keeps <span class="gui">OK</span> greyed.</p>
+</dd>
+</dl>
+<p>With a single state, the link keeps its values.</p>
+<div class="note">
+<p>Two states, <code class="sys">good</code> and <code
+class="sys">bad</code>, and a period of 1000 ms. From <code
+class="sys">good</code> to <code class="sys">bad</code> 5 %, from <code
+class="sys">bad</code> to <code class="sys">good</code> 50 %: each
+second, a good link turns bad once in twenty times, so after 20 seconds
+on average, and a bad one recovers after 2 seconds on average.</p>
+</div>
+<h2 id="running">While it runs</h2>
+<p>The states, their values, the period and the chances change at once
+in a Netemu that runs; the ends when it starts again. Each start begins
+in the first state.</p>
+<section id="seealso" class="seealso">
+<h2>See also</h2>
+<div class="links">
+<div class="link">
+<p><a href="kinds.html">The kinds of brick</a></p>
+<div class="desc">
+<p>What each brick is for, and the program that runs it.</p>
+</div>
+</div>
+<div class="link">
+<p><a href="wires.html">Wires</a></p>
+<div class="desc">
+<p>The two switches a wire joins.</p>
+</div>
+</div>
+</div>
+</section>
+</main>
+</div>
+</body>
+</html>

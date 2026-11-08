@@ -257,6 +257,7 @@ The steps of the user guide:
 | `Given Yelp is a program of the tests` | Before Virtualbricks starts: another desktop file, the default of its `mimeapps.list` for `x-scheme-handler/help`, runs the same script, which writes `yelp` and the link; the Yelp of this computer opens nothing. Without it, and with `Given yelp isn't on this computer`, the desktop has no program for `help:` links: GIO takes a desktop file only if its program is on `PATH` |
 | `Given the pages of the guide are where Yelp looks` | Before Virtualbricks starts: `help/C/virtualbricks` of the data folder of its home is a link to `docs/built/mallard` of the sources, the pages that `docs/build.py` writes, where it finds them as installed |
 | `When I press F1 in the Settings window` | F1, once the window is active |
+| `When I press F1 in the settings of sw1` | F1 in the main window, once the settings of the brick show, with **OK** |
 | `Then Yelp opens "help:virtualbricks/settings"` | The program of the tests got the link, as Yelp, and only it |
 | `Then Yelp opens the page settings of the sources` | The program of the tests got the path of `docs/built/mallard/settings.page` of the sources, as Yelp, and only it: the desktop gives a file by its path |
 | `Then the browser opens the HTML of the page settings` | The program of the tests got the path of `docs/built/html/settings.html` of the sources, as browser, and only it |

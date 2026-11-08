@@ -43,6 +43,7 @@ if has_display:
         show_help,
         yelp_uri,
     )
+    from virtualbricks.gui.mainwindow.bricks.config import PANELS
     from virtualbricks.gui.mainwindow.bricks.config.panel import Panel
     from virtualbricks.gui.mainwindow.tab import Tab
 
@@ -413,7 +414,20 @@ class TestTheNamedPages(HelpTestCase):
 
     def test_every_panel(self):
         pages = self.named(Panel)
-        self.assertEqual(pages["VirtualMachinePanel"], "machines")
         self.assertEqual(pages["EventEditor"], "events")
         self.assertEqual(pages["ImageDetails"], "images")
-        self.assertEqual(pages["SwitchPanel"], "bricks")
+        # the settings of a brick, the page of its kind
+        self.assertEqual(
+            {cls.__name__: pages[cls.__name__] for cls in PANELS.values()},
+            {
+                "CapturePanel": "capture-interfaces",
+                "NetemuPanel": "netemu",
+                "VirtualMachinePanel": "machines",
+                "SwitchPanel": "switches",
+                "SwitchWrapperPanel": "switch-wrappers",
+                "TunnelConnectPanel": "tunnel-clients",
+                "TapPanel": "taps",
+                "TunnelListenPanel": "tunnel-servers",
+                "WirePanel": "wires",
+            },
+        )

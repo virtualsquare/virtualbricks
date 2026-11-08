@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<page xmlns="http://projectmallard.org/1.0/" type="topic" id="wires">
+  <info>
+    <link type="guide" xref="index#kinds"/>
+    <link type="seealso" xref="kinds"/>
+    <link type="seealso" xref="netemu"/>
+    <link type="seealso" xref="topology#connect"/>
+    <title type="sort">4</title>
+    <desc>The two switches a wire joins.</desc>
+  </info>
+  <title>Wires</title>
+  <p>A wire is a cable between two switches: what one of them sends to the other, the wire passes on, both ways. It runs <cmd>dpipe</cmd>, which joins two <cmd>vde_plug</cmd>, one in each switch.</p>
+  <section id="ends">
+    <title>Ends</title>
+    <terms>
+      <item>
+        <title><gui>Left end</gui>, <gui>Right end</gui></title>
+        <p>The switches at the two ends of the wire. Each list has <gui>Nothing</gui>, then the switches and the switch wrappers of the project, by their name. With <gui>Plugs into machines</gui>, in the settings of the project, it has the socket cards of the virtual machines too, by the name of their socket: see <link xref="machines#network"/> and <link xref="settings#project"/>.</p>
+      </item>
+    </terms>
+    <p>An end in <gui>Nothing</gui> keeps the wire from starting: it is <gui>Not connected</gui>, and the end says so under it, in the colour of warnings. <gui>Connect To</gui>, in the menu of the wire, and the picture of the <gui>Topology</gui> tab connect its ends too; see <link xref="bricks#menu"/> and <link xref="topology#connect"/>.</p>
+  </section>
+  <section id="running">
+    <title>While it runs</title>
+    <p>New ends take effect when the wire starts again. <gui>Restart</gui>, under <gui>Process</gui> in its menu, does it at once; see <link xref="bricks#process"/>.</p>
+    <p>Stopping the wire cuts the link between its switches, and starting it again mends it: <link xref="events#flap"/> does it over and over.</p>
+  </section>
+</page>

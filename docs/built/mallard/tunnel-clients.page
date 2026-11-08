@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<page xmlns="http://projectmallard.org/1.0/" type="topic" id="tunnel-clients">
+  <info>
+    <link type="guide" xref="index#kinds"/>
+    <link type="seealso" xref="kinds"/>
+    <link type="seealso" xref="tunnel-servers"/>
+    <title type="sort">7</title>
+    <desc>The switch, server, ports and password of the end of a tunnel that connects to the other.</desc>
+  </info>
+  <title>Tunnel clients</title>
+  <p>A tunnel joins a switch of this computer to a switch of another one, over the network, through an encrypted link. The tunnel client is the end that connects to a tunnel server on the other computer. Both run <cmd>vde_cryptcab</cmd>. See <link xref="tunnel-servers"/> for the other end.</p>
+  <section id="connection">
+    <title>Connection</title>
+    <terms>
+      <item>
+        <title><gui>Plugged into</gui></title>
+        <p>The switch at this end of the tunnel. In <gui>Nothing</gui> the client is <gui>Not connected</gui>, and can't start.</p>
+      </item>
+    </terms>
+  </section>
+  <section id="tunnel">
+    <title>Tunnel</title>
+    <terms>
+      <item>
+        <title><gui>Server</gui></title>
+        <p>The computer that runs the tunnel server: its name, or its address, as the network of this computer reaches it. Without one the client is <gui>Not configured</gui>, and can't start.</p>
+      </item>
+      <item>
+        <title><gui>Server port</gui></title>
+        <p>The UDP port of the server, its <gui>Port</gui>, from 1 to 65535; 7667 by default.</p>
+      </item>
+      <item>
+        <title><gui>Local port</gui></title>
+        <p>The UDP port of this end, from 1 to 65535; 10771 by default. Two tunnel clients of this computer that run together need two ports.</p>
+      </item>
+      <item>
+        <title><gui>Password</gui></title>
+        <p>The password of the tunnel, the same as the server's; empty by default. The field hides it as you type it, but the project file keeps it as it is, in clear text. Older versions of Virtualbricks agree on the key of the tunnel, unless the password has quotes, backslashes, a dollar sign or two spaces in a row; see <link xref="tunnel-servers#tunnel"/>.</p>
+      </item>
+    </terms>
+  </section>
+  <section id="running">
+    <title>While it runs</title>
+    <p>The settings take effect when the client starts again; <gui>Restart</gui>, under <gui>Process</gui> in its menu, does it at once.</p>
+  </section>
+</page>

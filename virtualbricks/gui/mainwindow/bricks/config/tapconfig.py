@@ -31,6 +31,8 @@ from virtualbricks.i18n import _
 class TapPanel(Panel):
     """The settings of a tap."""
 
+    help_page = "taps"
+
     def build(self, form: Form) -> None:
         form.section(_("Connection"))
         form.socket(0, _("Plugged into"), _("The switch the interface joins"))

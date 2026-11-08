@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<page xmlns="http://projectmallard.org/1.0/" type="topic" id="netemu">
+  <info>
+    <link type="guide" xref="index#kinds"/>
+    <link type="seealso" xref="kinds"/>
+    <link type="seealso" xref="wires"/>
+    <title type="sort">5</title>
+    <desc>The bandwidth, delay, buffer and loss of an emulated link, in states that change by chance.</desc>
+  </info>
+  <title>Netemu</title>
+  <p>A Netemu is a wire that emulates a network link. The packets between its two switches wait in a buffer, which drains at the bandwidth of the link; they take its delay, and some are lost. The link has states, each with its own values, and it moves between them by chance, as a link that degrades and recovers. It runs <cmd>vde-netemu</cmd>, which Debian and Ubuntu don't ship; see <link xref="programs"/>.</p>
+  <section id="ends">
+    <title>Ends</title>
+    <terms>
+      <item>
+        <title><gui>Left end</gui>, <gui>Right end</gui></title>
+        <p>The switches at the two ends, as those of a wire: see <link xref="wires#ends"/>. The values go from left to right, from the left end to the right one, and from right to left. The socket card of a virtual machine can only be the right end.</p>
+      </item>
+    </terms>
+  </section>
+  <section id="states">
+    <title>States</title>
+    <p>The list has the states of the link, each with its name and its values, as <code>125000 bytes/s · 0 ms · 0 % lost</code>. The link starts in the first state. Select a state to see its values, and to change them, under <gui>Values</gui>.</p>
+    <p>The <gui>+</gui> button under the list adds a state after the selected one, named <sys>state 2</sys> or the next free number, with the default values and no chance of moving to it. The <gui>−</gui> button removes the selected state, unless it is the only one.</p>
+  </section>
+  <section id="values">
+    <title>Values</title>
+    <p>The values of the selected state:</p>
+    <terms>
+      <item>
+        <title><gui>Name</gui></title>
+        <p>The name of the state, in the list and in the grid of the transitions. Two states can't have the same name.</p>
+      </item>
+      <item>
+        <title><gui>Bandwidth</gui></title>
+        <p>Bytes per second at which the buffer drains, 0 for no limit; 125000 by default, a megabit per second.</p>
+      </item>
+      <item>
+        <title><gui>Delay</gui></title>
+        <p>The delay, in milliseconds, that a packet takes one way, on top of its time in the buffer; 0 by default.</p>
+      </item>
+      <item>
+        <title><gui>Buffer</gui></title>
+        <p>Bytes that the buffer holds, 0 for no limit; 75000 by default.</p>
+      </item>
+      <item>
+        <title><gui>Loss</gui></title>
+        <p>The percentage of packets lost, from 0 to 100, as 0.1 for one in a thousand; 0 by default.</p>
+      </item>
+    </terms>
+    <p>Each value has two numbers, <gui>→</gui> from left to right and <gui>←</gui> from right to left, and the switch <gui>Both ways</gui>. While it is on, the default, the value is the same both ways, the one of <gui>→</gui>, and <gui>←</gui> is greyed. Turn it off for a link that differs each way, as an ADSL line.</p>
+  </section>
+  <section id="transitions">
+    <title>Transitions</title>
+    <terms>
+      <item>
+        <title><gui>Period</gui></title>
+        <p>How often, in milliseconds, the link may change state; 100 by default.</p>
+      </item>
+      <item>
+        <title><gui>Chances</gui></title>
+        <p>A grid with a row and a column for each state. The number in the row of a state and the column of another is the chance, in %, of moving from the first to the second at each period. What a state doesn't give to the others it keeps: its own cell, greyed, says how much, as <code>90 % stays</code>. The chances of a row add up to 100 % at most; more is an error, which keeps <gui>OK</gui> greyed.</p>
+      </item>
+    </terms>
+    <p>With a single state, the link keeps its values.</p>
+    <note>
+      <p>Two states, <sys>good</sys> and <sys>bad</sys>, and a period of 1000 ms. From <sys>good</sys> to <sys>bad</sys> 5 %, from <sys>bad</sys> to <sys>good</sys> 50 %: each second, a good link turns bad once in twenty times, so after 20 seconds on average, and a bad one recovers after 2 seconds on average.</p>
+    </note>
+  </section>
+  <section id="running">
+    <title>While it runs</title>
+    <p>The states, their values, the period and the chances change at once in a Netemu that runs; the ends when it starts again. Each start begins in the first state.</p>
+  </section>
+</page>

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Switches — Virtualbricks Help</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="page guide">
+<main>
+<div class="trail">
+<p><a href="index.html">Virtualbricks Help</a> › <a
+href="index.html#kinds">Each kind of brick</a></p>
+</div>
+<h1>Switches</h1>
+<p>A switch is a VDE switch, as an Ethernet switch: the other bricks
+plug into its ports. A virtual machine plugs a network card into it, a
+wire joins it to another switch, a tap joins this computer to it. A
+switch needs nothing else to start. It runs <code
+class="cmd">vde_switch</code>.</p>
+<h2 id="ports">Ports</h2>
+<dl>
+<dt><span class="gui">Ports</span></dt>
+<dd>
+<p>How many plugs the switch takes, from 1 to 128; 32 by default. Each
+plug takes a port: a machine with two cards in the switch takes two. The
+switch can't have fewer ports than the plugs in it, and the line under
+<span class="gui">Ports</span> says how many it needs and which bricks
+plug into it.</p>
+</dd>
+<dt><span class="gui">Hub mode</span></dt>
+<dd>
+<p>Send every packet to every port, as a hub does, not only to the port
+of its destination. A program that captures packets on one port, as
+<code class="cmd">tcpdump</code> in a machine, then sees the traffic of
+all of them. Off by default.</p>
+</dd>
+<dt><span class="gui">Fast spanning tree</span></dt>
+<dd>
+<p>Run the fast spanning tree protocol, which finds the loops between
+switches and turns off the ports that close them, so that a packet
+doesn't go round forever. Turn it on in the switches of a lab whose
+wires make a loop. Off by default.</p>
+</dd>
+</dl>
+<h2 id="running">While it runs</h2>
+<p>The three settings change at once in a switch that runs:
+Virtualbricks gives them to <code class="cmd">vde_switch</code> through
+its console, without stopping it, and the bar over the settings says so.
+The bricks plugged into the switch stay plugged.</p>
+<p>In the console of the switch, <span class="guiseq"><span
+class="gui">Process</span> › <span class="gui">Open Control
+Monitor</span></span> in its menu, <code class="cmd">port/print</code>
+lists its ports and what is plugged into each; see <a
+href="bricks.html#process">The process of a brick</a>.</p>
+<section id="seealso" class="seealso">
+<h2>See also</h2>
+<div class="links">
+<div class="link">
+<p><a href="switch-wrappers.html">Switch wrappers</a></p>
+<div class="desc">
+<p>The control folder of a switch that another program runs.</p>
+</div>
+</div>
+<div class="link">
+<p><a href="kinds.html">The kinds of brick</a></p>
+<div class="desc">
+<p>What each brick is for, and the program that runs it.</p>
+</div>
+</div>
+<div class="link">
+<p><a href="wires.html">Wires</a></p>
+<div class="desc">
+<p>The two switches a wire joins.</p>
+</div>
+</div>
+</div>
+</section>
+</main>
+</div>
+</body>
+</html>

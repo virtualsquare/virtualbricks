@@ -30,6 +30,8 @@ from virtualbricks.i18n import _
 class WirePanel(Panel):
     """The settings of a wire."""
 
+    help_page = "wires"
+
     def build(self, form: Form) -> None:
         form.section(_("Ends"))
         form.socket(0, _("Left end"), _("The switch at one end of the wire"))

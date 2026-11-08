@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Switch wrappers — Virtualbricks Help</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="page guide">
+<main>
+<div class="trail">
+<p><a href="index.html">Virtualbricks Help</a> › <a
+href="index.html#kinds">Each kind of brick</a></p>
+</div>
+<h1>Switch wrappers</h1>
+<p>A switch wrapper is a switch that another program runs: a <code
+class="cmd">vde_switch</code> started by hand, by a script or by another
+project. The bricks of this project plug into it as into a switch of
+their own. Virtualbricks doesn't start it or stop it: the wrapper runs
+while a switch listens in its folder.</p>
+<h2 id="switch">Switch</h2>
+<dl>
+<dt><span class="gui">Control folder</span></dt>
+<dd>
+<p>The control folder of the switch: the folder that <code
+class="cmd">vde_switch</code> makes for its sockets, the one its option
+<code>-s</code> names, with the socket <code class="file">ctl</code> in
+it. Type it, or choose it with the button beside it. Without a folder
+the wrapper is <span class="gui">Not configured</span>.</p>
+</dd>
+</dl>
+<p>For a switch started as</p>
+<pre><code>vde_switch -d -s /tmp/lab-switch</code></pre>
+<p>the control folder is <code class="file">/tmp/lab-switch</code>.</p>
+<p>The ports of the switch, its hub mode and its spanning tree are the
+other program's: the wrapper has no settings of them.</p>
+<h2 id="state">Its state</h2>
+<p>Virtualbricks looks at the folder every second:</p>
+<dl>
+<dt><span class="gui">Running</span></dt>
+<dd>
+<p>A switch listens in the folder.</p>
+</dd>
+<dt><span class="gui">Stopped</span></dt>
+<dd>
+<p>The folder isn't there, as when the switch has quit and removed
+it.</p>
+</dd>
+<dt><span class="gui">Error</span></dt>
+<dd>
+<p>The folder is there, but no switch listens: it has no socket <code
+class="file">ctl</code>, or the one that a killed switch leaves. The
+tooltip of the state says which, and so does the <span
+class="gui">Logs</span> window.</p>
+</dd>
+</dl>
+<p><span class="gui">Start</span> only looks at the folder, and fails,
+saying why, when no switch listens there. <span class="gui">Stop</span>
+is refused while a switch listens: the program that runs it stops it. A
+brick that plugs into the wrapper starts only while its switch
+listens.</p>
+<h2 id="running">While it runs</h2>
+<p>A new control folder takes effect at once: Virtualbricks looks at the
+new folder, and the bricks plugged into the wrapper join that switch the
+next time they start.</p>
+<section id="seealso" class="seealso">
+<h2>See also</h2>
+<div class="links">
+<div class="link">
+<p><a href="switches.html">Switches</a></p>
+<div class="desc">
+<p>Its ports, hub mode and fast spanning tree.</p>
+</div>
+</div>
+<div class="link">
+<p><a href="kinds.html">The kinds of brick</a></p>
+<div class="desc">
+<p>What each brick is for, and the program that runs it.</p>
+</div>
+</div>
+</div>
+</section>
+</main>
+</div>
+</body>
+</html>

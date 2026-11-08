@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<page xmlns="http://projectmallard.org/1.0/" type="topic" id="tunnel-servers">
+  <info>
+    <link type="guide" xref="index#kinds"/>
+    <link type="seealso" xref="kinds"/>
+    <link type="seealso" xref="tunnel-clients"/>
+    <title type="sort">6</title>
+    <desc>The switch, port and password of the end of a tunnel that waits for the other.</desc>
+  </info>
+  <title>Tunnel servers</title>
+  <p>A tunnel joins a switch of this computer to a switch of another one, over the network, through an encrypted link. It has two ends: a tunnel server, which waits on a UDP port, and a tunnel client, on the other computer, which connects to that port. Both run <cmd>vde_cryptcab</cmd>. See <link xref="tunnel-clients"/> for the other end.</p>
+  <section id="connection">
+    <title>Connection</title>
+    <terms>
+      <item>
+        <title><gui>Plugged into</gui></title>
+        <p>The switch at this end of the tunnel. In <gui>Nothing</gui> the server is <gui>Not connected</gui>, and can't start.</p>
+      </item>
+    </terms>
+  </section>
+  <section id="tunnel">
+    <title>Tunnel</title>
+    <terms>
+      <item>
+        <title><gui>Port</gui></title>
+        <p>The UDP port where the server waits for the client, from 1 to 65535; 7667 by default. It is the <gui>Server port</gui> of the client, and a firewall between the two computers must let UDP through to it.</p>
+      </item>
+      <item>
+        <title><gui>Password</gui></title>
+        <p>The password of the tunnel, which the client must have too; empty by default. The field hides it as you type it, but the project file keeps it as it is, in clear text. The key of the tunnel is made from it: choose one, since an empty password is a key that anyone can guess.</p>
+      </item>
+    </terms>
+    <note>
+      <p>Virtualbricks makes the key as its older versions did, so that a tunnel works with an end that runs one of them. A password with quotes, backslashes, a dollar sign or two spaces in a row is the exception: then both ends need this version.</p>
+    </note>
+  </section>
+  <section id="running">
+    <title>While it runs</title>
+    <p>The settings take effect when the server starts again; <gui>Restart</gui>, under <gui>Process</gui> in its menu, does it at once.</p>
+  </section>
+</page>

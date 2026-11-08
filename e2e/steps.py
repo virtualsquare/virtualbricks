@@ -5390,6 +5390,15 @@ def f1_in_settings(virtualbricks):
     virtualbricks.key("F1", virtualbricks.find("dialog", SETTINGS_WINDOW))
 
 
+@when(words("I press F1 in the settings of {name:Brick}"))
+def f1_in_brick_settings(virtualbricks, name):
+    """F1 in the main window, while the settings of the brick show."""
+
+    virtualbricks.find("label", name)
+    virtualbricks.find("button", "OK")
+    virtualbricks.key("F1", virtualbricks.find("frame"))
+
+
 @then(words('Yelp opens "{link}"'))
 def yelp_opens(virtualbricks, link):
     """The program of the tests has opened the link as Yelp, and only it."""

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<page xmlns="http://projectmallard.org/1.0/" type="topic" id="switches">
+  <info>
+    <link type="guide" xref="index#kinds"/>
+    <link type="seealso" xref="kinds"/>
+    <link type="seealso" xref="wires"/>
+    <link type="seealso" xref="switch-wrappers"/>
+    <title type="sort">2</title>
+    <desc>Its ports, hub mode and fast spanning tree.</desc>
+  </info>
+  <title>Switches</title>
+  <p>A switch is a VDE switch, as an Ethernet switch: the other bricks plug into its ports. A virtual machine plugs a network card into it, a wire joins it to another switch, a tap joins this computer to it. A switch needs nothing else to start. It runs <cmd>vde_switch</cmd>.</p>
+  <section id="ports">
+    <title>Ports</title>
+    <terms>
+      <item>
+        <title><gui>Ports</gui></title>
+        <p>How many plugs the switch takes, from 1 to 128; 32 by default. Each plug takes a port: a machine with two cards in the switch takes two. The switch can't have fewer ports than the plugs in it, and the line under <gui>Ports</gui> says how many it needs and which bricks plug into it.</p>
+      </item>
+      <item>
+        <title><gui>Hub mode</gui></title>
+        <p>Send every packet to every port, as a hub does, not only to the port of its destination. A program that captures packets on one port, as <cmd>tcpdump</cmd> in a machine, then sees the traffic of all of them. Off by default.</p>
+      </item>
+      <item>
+        <title><gui>Fast spanning tree</gui></title>
+        <p>Run the fast spanning tree protocol, which finds the loops between switches and turns off the ports that close them, so that a packet doesn't go round forever. Turn it on in the switches of a lab whose wires make a loop. Off by default.</p>
+      </item>
+    </terms>
+  </section>
+  <section id="running">
+    <title>While it runs</title>
+    <p>The three settings change at once in a switch that runs: Virtualbricks gives them to <cmd>vde_switch</cmd> through its console, without stopping it, and the bar over the settings says so. The bricks plugged into the switch stay plugged.</p>
+    <p>In the console of the switch, <guiseq><gui>Process</gui><gui>Open Control Monitor</gui></guiseq> in its menu, <cmd>port/print</cmd> lists its ports and what is plugged into each; see <link xref="bricks#process"/>.</p>
+  </section>
+</page>

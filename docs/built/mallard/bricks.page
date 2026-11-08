@@ -42,7 +42,7 @@
   </section>
   <section id="settings">
     <title>The settings of a brick</title>
-    <p>Double-click a row, or select it and press <key>Enter</key>: the settings of the brick show in place of the list, under a line that names it. <gui>OK</gui> applies them, and is greyed while a setting is wrong, with the first problem beside it. <gui>Cancel</gui> and <key>Esc</key> go back to the list without a change. While the brick runs, a bar over its settings says which of them change at once.</p>
+    <p>Double-click a row, or select it and press <key>Enter</key>: the settings of the brick show in place of the list, under a line that names it. <gui>OK</gui> applies them, and is greyed while a setting is wrong, with the first problem beside it. <gui>Cancel</gui> and <key>Esc</key> go back to the list without a change. While the brick runs, a bar over its settings says which of them change at once. <key>F1</key> and <gui>Help</gui> open the page about the settings of its kind, as <link xref="switches"/> or <link xref="machines"/>; <link xref="index#kinds"/> lists them.</p>
     <figure>
       <title>The settings of a switch</title>
       <media type="image" mime="image/png" src="figures/switch-settings.png">

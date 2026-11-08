@@ -30,13 +30,14 @@ See [](programs).
 **Switch**
 
 :   A VDE switch: the other bricks plug into its ports, as into an Ethernet
-    switch. It can start as it is. It runs `vde_switch`{.cmd}.
+    switch. It can start as it is. It runs `vde_switch`{.cmd}. See
+    [](switches).
 
 **Switch wrapper**
 
 :   A switch that another program runs. The bricks of this project plug into
     its socket, whose path its settings give. You don't start or stop it: it
-    runs while that socket is there.
+    runs while that socket is there. See [](switch-wrappers).
 
 **Router**
 
@@ -48,24 +49,25 @@ See [](programs).
 **Wire**
 
 :   A cable between two switches, which its settings choose. It runs
-    `dpipe`{.cmd} and `vde_plug`{.cmd}.
+    `dpipe`{.cmd} and `vde_plug`{.cmd}. See [](wires).
 
 **Netemu**
 
 :   A cable between two switches that emulates a network link: its bandwidth,
     delay, loss and more, in states that change over time. It runs
-    `vde-netemu`{.cmd}.
+    `vde-netemu`{.cmd}. See [](netemu).
 
 **Tunnel server**
 
 :   One end of an encrypted tunnel: it joins a switch here to a tunnel client
     on another computer, which connects to it. It runs `vde_cryptcab`{.cmd}.
+    See [](tunnel-servers).
 
 **Tunnel client**
 
 :   The other end of an encrypted tunnel: it joins a switch here to a tunnel
     server on another computer, whose address its settings give. It runs
-    `vde_cryptcab`{.cmd}.
+    `vde_cryptcab`{.cmd}. See [](tunnel-clients).
 
 ## This computer {#host}
 
@@ -73,11 +75,12 @@ See [](programs).
 
 :   A network interface of this computer, plugged into a switch: this computer
     joins the lab through it. It runs `vde_plug2tap`{.cmd} as root, through
-    `sudo`{.cmd}.
+    `sudo`{.cmd}. See [](taps).
 
 **Capture interface**
 
 :   An interface of this computer, whose packets go to a switch. It runs
-    `vde_pcapplug`{.cmd} as root, through `sudo`{.cmd}.
+    `vde_pcapplug`{.cmd} as root, through `sudo`{.cmd}. See
+    [](capture-interfaces).
 
 For what `sudo`{.cmd} needs, see [](problems#sudo).

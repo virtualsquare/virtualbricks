@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Capture interfaces — Virtualbricks Help</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="page guide">
+<main>
+<div class="trail">
+<p><a href="index.html">Virtualbricks Help</a> › <a
+href="index.html#kinds">Each kind of brick</a></p>
+</div>
+<h1>Capture interfaces</h1>
+<p>A capture interface joins a switch of the lab to a network interface
+that this computer has already, as its Ethernet card: the packets of
+that interface go into the switch, and those of the switch go out of the
+interface. It runs <code class="cmd">vde_pcapplug</code> as root,
+through <code class="cmd">sudo</code>; see <a
+href="problems.html#sudo">A tap or a capture interface doesn't
+start</a>.</p>
+<h2 id="connection">Connection</h2>
+<dl>
+<dt><span class="gui">Plugged into</span></dt>
+<dd>
+<p>The switch that gets the packets. In <span class="gui">Nothing</span>
+the capture interface is <span class="gui">Not connected</span>, and
+can't start.</p>
+</dd>
+</dl>
+<h2 id="capture">Capture</h2>
+<dl>
+<dt><span class="gui">Interface</span></dt>
+<dd>
+<p>The interface of this computer, as <code class="sys">eth0</code>;
+<span class="gui">None</span> by default. The menu lists the interfaces
+of this computer when the settings open, but the loopback, <code
+class="sys">lo</code>. Without one the capture interface is <span
+class="gui">Not configured</span>, and can't start. An interface that
+this computer doesn't have, as in a project made on another computer,
+shows as <code>eth1, not on this host</code>, with a warning: choose one
+of this computer.</p>
+</dd>
+</dl>
+<h2 id="running">While it runs</h2>
+<p>The settings take effect when the capture interface starts again;
+<span class="gui">Restart</span>, under <span class="gui">Process</span>
+in its menu, does it at once.</p>
+<section id="seealso" class="seealso">
+<h2>See also</h2>
+<div class="links">
+<div class="link">
+<p><a href="problems.html#sudo">A tap or a capture interface doesn't
+start</a></p>
+</div>
+<div class="link">
+<p><a href="taps.html">Taps</a></p>
+<div class="desc">
+<p>The switch that a network interface of this computer joins, and its
+address.</p>
+</div>
+</div>
+<div class="link">
+<p><a href="kinds.html">The kinds of brick</a></p>
+<div class="desc">
+<p>What each brick is for, and the program that runs it.</p>
+</div>
+</div>
+</div>
+</section>
+</main>
+</div>
+</body>
+</html>

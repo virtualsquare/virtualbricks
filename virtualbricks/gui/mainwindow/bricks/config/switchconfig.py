@@ -30,6 +30,8 @@ from virtualbricks.i18n import _
 class SwitchPanel(Panel):
     """The settings of a switch."""
 
+    help_page = "switches"
+
     def build(self, form: Form) -> None:
         form.section(_("Ports"))
         form.spin("ports")

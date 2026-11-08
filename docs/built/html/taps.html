@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Taps — Virtualbricks Help</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="page guide">
+<main>
+<div class="trail">
+<p><a href="index.html">Virtualbricks Help</a> › <a
+href="index.html#kinds">Each kind of brick</a></p>
+</div>
+<h1>Taps</h1>
+<p>A tap is a network interface of this computer, plugged into a switch
+of the lab: through it this computer joins the lab, as one more machine
+on that switch. The interface takes the name of the brick, as <code
+class="sys">tap1</code>, so the name of a tap has 15 characters at most.
+It runs <code class="cmd">vde_plug2tap</code> as root, through <code
+class="cmd">sudo</code>; see <a href="problems.html#sudo">A tap or a
+capture interface doesn't start</a>.</p>
+<h2 id="connection">Connection</h2>
+<dl>
+<dt><span class="gui">Plugged into</span></dt>
+<dd>
+<p>The switch that the interface joins. In <span
+class="gui">Nothing</span> the tap is <span class="gui">Not
+connected</span>, and can't start.</p>
+</dd>
+</dl>
+<h2 id="address">Address</h2>
+<dl>
+<dt><span class="gui">Address</span></dt>
+<dd>
+<p>How the interface gets its address: <span class="gui">Off</span>, the
+default, <span class="gui">DHCP</span> or <span
+class="gui">Manual</span>.</p>
+</dd>
+<dt><span class="gui">IP address</span>, <span
+class="gui">Netmask</span>, <span class="gui">Gateway</span></dt>
+<dd>
+<p>With <span class="gui">Manual</span>: the address of the interface,
+10.0.0.1 by default; its netmask, 255.255.255.0 by default; and the
+default gateway, empty for none. They are greyed otherwise.</p>
+</dd>
+</dl>
+<div class="note warning">
+<p>Virtualbricks doesn't give the interface its address yet: with <span
+class="gui">DHCP</span> or <span class="gui">Manual</span>, the settings
+keep your choice, and the line under <span class="gui">Address</span>
+says so. The interface comes up without an address. An event of the
+start of the tap can give it one; see <a href="events.html#tap">The
+address of a tap</a>.</p>
+</div>
+<h2 id="running">While it runs</h2>
+<p>A new switch takes effect when the tap starts again; <span
+class="gui">Restart</span>, under <span class="gui">Process</span> in
+its menu, does it at once.</p>
+<section id="seealso" class="seealso">
+<h2>See also</h2>
+<div class="links">
+<div class="link">
+<p><a href="problems.html#sudo">A tap or a capture interface doesn't
+start</a></p>
+</div>
+<div class="link">
+<p><a href="capture-interfaces.html">Capture interfaces</a></p>
+<div class="desc">
+<p>The switch and the interface of this computer that a capture
+interface joins.</p>
+</div>
+</div>
+<div class="link">
+<p><a href="events.html#tap">The address of a tap</a></p>
+</div>
+<div class="link">
+<p><a href="kinds.html">The kinds of brick</a></p>
+<div class="desc">
+<p>What each brick is for, and the program that runs it.</p>
+</div>
+</div>
+</div>
+</section>
+</main>
+</div>
+</body>
+</html>

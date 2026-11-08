@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tunnel servers — Virtualbricks Help</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="page guide">
+<main>
+<div class="trail">
+<p><a href="index.html">Virtualbricks Help</a> › <a
+href="index.html#kinds">Each kind of brick</a></p>
+</div>
+<h1>Tunnel servers</h1>
+<p>A tunnel joins a switch of this computer to a switch of another one,
+over the network, through an encrypted link. It has two ends: a tunnel
+server, which waits on a UDP port, and a tunnel client, on the other
+computer, which connects to that port. Both run <code
+class="cmd">vde_cryptcab</code>. See <a
+href="tunnel-clients.html">Tunnel clients</a> for the other end.</p>
+<h2 id="connection">Connection</h2>
+<dl>
+<dt><span class="gui">Plugged into</span></dt>
+<dd>
+<p>The switch at this end of the tunnel. In <span
+class="gui">Nothing</span> the server is <span class="gui">Not
+connected</span>, and can't start.</p>
+</dd>
+</dl>
+<h2 id="tunnel">Tunnel</h2>
+<dl>
+<dt><span class="gui">Port</span></dt>
+<dd>
+<p>The UDP port where the server waits for the client, from 1 to 65535;
+7667 by default. It is the <span class="gui">Server port</span> of the
+client, and a firewall between the two computers must let UDP through to
+it.</p>
+</dd>
+<dt><span class="gui">Password</span></dt>
+<dd>
+<p>The password of the tunnel, which the client must have too; empty by
+default. The field hides it as you type it, but the project file keeps
+it as it is, in clear text. The key of the tunnel is made from it:
+choose one, since an empty password is a key that anyone can guess.</p>
+</dd>
+</dl>
+<div class="note">
+<p>Virtualbricks makes the key as its older versions did, so that a
+tunnel works with an end that runs one of them. A password with quotes,
+backslashes, a dollar sign or two spaces in a row is the exception: then
+both ends need this version.</p>
+</div>
+<h2 id="running">While it runs</h2>
+<p>The settings take effect when the server starts again; <span
+class="gui">Restart</span>, under <span class="gui">Process</span> in
+its menu, does it at once.</p>
+<section id="seealso" class="seealso">
+<h2>See also</h2>
+<div class="links">
+<div class="link">
+<p><a href="kinds.html">The kinds of brick</a></p>
+<div class="desc">
+<p>What each brick is for, and the program that runs it.</p>
+</div>
+</div>
+<div class="link">
+<p><a href="tunnel-clients.html">Tunnel clients</a></p>
+<div class="desc">
+<p>The switch, server, ports and password of the end of a tunnel that
+connects to the other.</p>
+</div>
+</div>
+</div>
+</section>
+</main>
+</div>
+</body>
+</html>

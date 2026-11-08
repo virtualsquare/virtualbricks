@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<page xmlns="http://projectmallard.org/1.0/" type="topic" id="capture-interfaces">
+  <info>
+    <link type="guide" xref="index#kinds"/>
+    <link type="seealso" xref="kinds"/>
+    <link type="seealso" xref="taps"/>
+    <link type="seealso" xref="problems#sudo"/>
+    <title type="sort">9</title>
+    <desc>The switch and the interface of this computer that a capture interface joins.</desc>
+  </info>
+  <title>Capture interfaces</title>
+  <p>A capture interface joins a switch of the lab to a network interface that this computer has already, as its Ethernet card: the packets of that interface go into the switch, and those of the switch go out of the interface. It runs <cmd>vde_pcapplug</cmd> as root, through <cmd>sudo</cmd>; see <link xref="problems#sudo"/>.</p>
+  <section id="connection">
+    <title>Connection</title>
+    <terms>
+      <item>
+        <title><gui>Plugged into</gui></title>
+        <p>The switch that gets the packets. In <gui>Nothing</gui> the capture interface is <gui>Not connected</gui>, and can't start.</p>
+      </item>
+    </terms>
+  </section>
+  <section id="capture">
+    <title>Capture</title>
+    <terms>
+      <item>
+        <title><gui>Interface</gui></title>
+        <p>The interface of this computer, as <sys>eth0</sys>; <gui>None</gui> by default. The menu lists the interfaces of this computer when the settings open, but the loopback, <sys>lo</sys>. Without one the capture interface is <gui>Not configured</gui>, and can't start. An interface that this computer doesn't have, as in a project made on another computer, shows as <code>eth1, not on this host</code>, with a warning: choose one of this computer.</p>
+      </item>
+    </terms>
+  </section>
+  <section id="running">
+    <title>While it runs</title>
+    <p>The settings take effect when the capture interface starts again; <gui>Restart</gui>, under <gui>Process</gui> in its menu, does it at once.</p>
+  </section>
+</page>

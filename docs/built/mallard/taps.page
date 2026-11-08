@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<page xmlns="http://projectmallard.org/1.0/" type="topic" id="taps">
+  <info>
+    <link type="guide" xref="index#kinds"/>
+    <link type="seealso" xref="kinds"/>
+    <link type="seealso" xref="events#tap"/>
+    <link type="seealso" xref="problems#sudo"/>
+    <title type="sort">8</title>
+    <desc>The switch that a network interface of this computer joins, and its address.</desc>
+  </info>
+  <title>Taps</title>
+  <p>A tap is a network interface of this computer, plugged into a switch of the lab: through it this computer joins the lab, as one more machine on that switch. The interface takes the name of the brick, as <sys>tap1</sys>, so the name of a tap has 15 characters at most. It runs <cmd>vde_plug2tap</cmd> as root, through <cmd>sudo</cmd>; see <link xref="problems#sudo"/>.</p>
+  <section id="connection">
+    <title>Connection</title>
+    <terms>
+      <item>
+        <title><gui>Plugged into</gui></title>
+        <p>The switch that the interface joins. In <gui>Nothing</gui> the tap is <gui>Not connected</gui>, and can't start.</p>
+      </item>
+    </terms>
+  </section>
+  <section id="address">
+    <title>Address</title>
+    <terms>
+      <item>
+        <title><gui>Address</gui></title>
+        <p>How the interface gets its address: <gui>Off</gui>, the default, <gui>DHCP</gui> or <gui>Manual</gui>.</p>
+      </item>
+      <item>
+        <title><gui>IP address</gui>, <gui>Netmask</gui>, <gui>Gateway</gui></title>
+        <p>With <gui>Manual</gui>: the address of the interface, 10.0.0.1 by default; its netmask, 255.255.255.0 by default; and the default gateway, empty for none. They are greyed otherwise.</p>
+      </item>
+    </terms>
+    <note style="warning">
+      <p>Virtualbricks doesn't give the interface its address yet: with <gui>DHCP</gui> or <gui>Manual</gui>, the settings keep your choice, and the line under <gui>Address</gui> says so. The interface comes up without an address. An event of the start of the tap can give it one; see <link xref="events#tap"/>.</p>
+    </note>
+  </section>
+  <section id="running">
+    <title>While it runs</title>
+    <p>A new switch takes effect when the tap starts again; <gui>Restart</gui>, under <gui>Process</gui> in its menu, does it at once.</p>
+  </section>
+</page>

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tunnel clients — Virtualbricks Help</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="page guide">
+<main>
+<div class="trail">
+<p><a href="index.html">Virtualbricks Help</a> › <a
+href="index.html#kinds">Each kind of brick</a></p>
+</div>
+<h1>Tunnel clients</h1>
+<p>A tunnel joins a switch of this computer to a switch of another one,
+over the network, through an encrypted link. The tunnel client is the
+end that connects to a tunnel server on the other computer. Both run
+<code class="cmd">vde_cryptcab</code>. See <a
+href="tunnel-servers.html">Tunnel servers</a> for the other end.</p>
+<h2 id="connection">Connection</h2>
+<dl>
+<dt><span class="gui">Plugged into</span></dt>
+<dd>
+<p>The switch at this end of the tunnel. In <span
+class="gui">Nothing</span> the client is <span class="gui">Not
+connected</span>, and can't start.</p>
+</dd>
+</dl>
+<h2 id="tunnel">Tunnel</h2>
+<dl>
+<dt><span class="gui">Server</span></dt>
+<dd>
+<p>The computer that runs the tunnel server: its name, or its address,
+as the network of this computer reaches it. Without one the client is
+<span class="gui">Not configured</span>, and can't start.</p>
+</dd>
+<dt><span class="gui">Server port</span></dt>
+<dd>
+<p>The UDP port of the server, its <span class="gui">Port</span>, from 1
+to 65535; 7667 by default.</p>
+</dd>
+<dt><span class="gui">Local port</span></dt>
+<dd>
+<p>The UDP port of this end, from 1 to 65535; 10771 by default. Two
+tunnel clients of this computer that run together need two ports.</p>
+</dd>
+<dt><span class="gui">Password</span></dt>
+<dd>
+<p>The password of the tunnel, the same as the server's; empty by
+default. The field hides it as you type it, but the project file keeps
+it as it is, in clear text. Older versions of Virtualbricks agree on the
+key of the tunnel, unless the password has quotes, backslashes, a dollar
+sign or two spaces in a row; see <a
+href="tunnel-servers.html#tunnel">Tunnel</a>.</p>
+</dd>
+</dl>
+<h2 id="running">While it runs</h2>
+<p>The settings take effect when the client starts again; <span
+class="gui">Restart</span>, under <span class="gui">Process</span> in
+its menu, does it at once.</p>
+<section id="seealso" class="seealso">
+<h2>See also</h2>
+<div class="links">
+<div class="link">
+<p><a href="kinds.html">The kinds of brick</a></p>
+<div class="desc">
+<p>What each brick is for, and the program that runs it.</p>
+</div>
+</div>
+<div class="link">
+<p><a href="tunnel-servers.html">Tunnel servers</a></p>
+<div class="desc">
+<p>The switch, port and password of the end of a tunnel that waits for
+the other.</p>
+</div>
+</div>
+</div>
+</section>
+</main>
+</div>
+</body>
+</html>

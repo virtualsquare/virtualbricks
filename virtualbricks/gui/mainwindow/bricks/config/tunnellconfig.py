@@ -31,6 +31,8 @@ from virtualbricks.i18n import _
 class TunnelListenPanel(Panel):
     """The settings of the server end of a tunnel."""
 
+    help_page = "tunnel-servers"
+
     def build(self, form: Form) -> None:
         form.section(_("Connection"))
         form.socket(

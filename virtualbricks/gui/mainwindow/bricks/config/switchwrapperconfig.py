@@ -31,6 +31,8 @@ from virtualbricks.i18n import _
 class SwitchWrapperPanel(Panel):
     """The settings of a switch wrapper."""
 
+    help_page = "switch-wrappers"
+
     def build(self, form: Form) -> None:
         form.section(_("Switch"))
         form.path(

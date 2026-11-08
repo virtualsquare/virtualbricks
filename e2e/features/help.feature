@@ -29,3 +29,12 @@ Feature: Help
     When I open the Settings window
     And I press F1 in the Settings window
     Then the browser opens the HTML of the page settings
+
+  Scenario: F1 in the settings of a switch opens the page of the switches in Yelp
+    Given Yelp is a program of the tests
+    And the pages of the guide are where Yelp looks
+    And Virtualbricks is running
+    When I add the switch sw1
+    And I open the settings of sw1
+    And I press F1 in the settings of sw1
+    Then Yelp opens "help:virtualbricks/switches"

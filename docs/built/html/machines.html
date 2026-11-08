@@ -11,7 +11,7 @@
 <main>
 <div class="trail">
 <p><a href="index.html">Virtualbricks Help</a> › <a
-href="index.html#lab">Your lab</a></p>
+href="index.html#kinds">Each kind of brick</a></p>
 </div>
 <h1>Virtual machines</h1>
 <p>A virtual machine is a brick that QEMU runs. Its settings have a
@@ -20,21 +20,88 @@ program, the type of machine, its processors and its memory; <span
 class="gui">Disks</span>; <span class="gui">CD-ROM and boot</span>;
 <span class="gui">Network</span>; <span class="gui">Display</span>;
 <span class="gui">Sound and USB</span>; <span class="gui">Kernel</span>,
-to boot a kernel of your own; and <span class="gui">Advanced</span>. The
-line at the top says which QEMU will run it.</p>
+to boot a kernel of your own; and <span class="gui">Advanced</span>.</p>
 <figure>
 <a href="figures/machine-settings.png"><img
 src="figures/machine-settings.png"
 alt="The settings of vm1: the line at the top names its QEMU, the sections are at the left, and the section Machine shows Program, Machine type, CPU model, KVM, Virtual CPUs and Memory." /></a>
 <figcaption>The settings of a virtual machine</figcaption>
 </figure>
+<p>The line at the top says which QEMU will run the machine, and its
+version. The lists of machine types, CPU models, sound cards and network
+cards are what that QEMU has. When the program isn't there, the line
+says so, and the lists have only the choices of the machine. A setting
+that this QEMU lacks says so under it, in the colour of warnings, and
+its section is marked at the left: the machine starts without it, and
+the <span class="gui">Logs</span> window says so.</p>
+<p>The settings take effect when the machine starts again.</p>
+<h2 id="machine">Machine</h2>
+<dl>
+<dt><span class="gui">Program</span></dt>
+<dd>
+<p>The QEMU program, by its architecture, as <code
+class="sys">x86_64</code> for <code
+class="cmd">qemu-system-x86_64</code>: the list has those in the QEMU
+folder of the project, see <a href="programs.html#where">Where
+Virtualbricks looks</a>. One that isn't there shows as not installed.
+<code class="sys">i386</code> by default.</p>
+</dd>
+<dt><span class="gui">Machine type</span></dt>
+<dd>
+<p>The type of machine that QEMU emulates, as <code
+class="sys">q35</code> or <code class="sys">virt</code>; <span
+class="gui">The default</span> for the one of QEMU, which the list
+names. The programs of ARM, and that of RISC-V in QEMU 11, have no
+default: choose one, as <code class="sys">virt</code>, or the machine
+can't start.</p>
+</dd>
+<dt><span class="gui">CPU model</span></dt>
+<dd>
+<p>The processor that QEMU emulates; <span class="gui">The
+default</span> for the one of QEMU.</p>
+</dd>
+<dt><span class="gui">KVM</span></dt>
+<dd>
+<p>Run the machine with KVM, the virtualization of the processor of this
+computer, far faster than emulating it. Where KVM can't run, as without
+<code class="file">/dev/kvm</code> or for a processor of another kind,
+QEMU emulates it all the same. Off by default.</p>
+</dd>
+<dt><span class="gui">Virtual CPUs</span></dt>
+<dd>
+<p>The number of processors of the machine, from 1 to 64; 1 by
+default.</p>
+</dd>
+<dt><span class="gui">Memory</span></dt>
+<dd>
+<p>The memory of the machine, in MiB, from 1 to 99999; 64 by
+default.</p>
+</dd>
+<dt><span class="gui">KVM shadow memory</span>, <span class="gui">Shadow
+memory</span></dt>
+<dd>
+<p>With <span class="gui">KVM</span>: the memory that KVM keeps for the
+page tables of the machine, in MiB, when the default of QEMU isn't
+enough. Off by default.</p>
+</dd>
+<dt><span class="gui">ACPI</span></dt>
+<dd>
+<p>Power management. <span class="gui">Stop</span> asks the system of
+the machine to shut down through ACPI: without it, the system doesn't
+hear it, and only <span class="gui">Terminate</span> or <span
+class="gui">Kill</span> stop the machine. On by default.</p>
+</dd>
+</dl>
 <h2 id="disks">Disks</h2>
 <p><span class="gui">Add Disk</span> adds a disk on the first free
-device. Each disk chooses its image in a list of the images of the
-project, which says what each is and who uses it. The list also has
-<span class="gui">Add an Existing Image…</span>, <span class="gui">New
-Empty Disk…</span> and <span class="gui">Manage Images…</span>, which
-shows the <span class="gui">Images</span> tab.</p>
+device: <code class="sys">hda</code> to <code class="sys">hdd</code>,
+the floppies <code class="sys">fda</code> and <code
+class="sys">fdb</code>, and <code class="sys">mtdblock</code>. Each disk
+chooses its image in a list of the images of the project, which says
+what each is and who uses it. The list also has <span class="gui">Add an
+Existing Image…</span>, <span class="gui">New Empty Disk…</span> and
+<span class="gui">Manage Images…</span>, which shows the <span
+class="gui">Images</span> tab.</p>
 <div class="terms">
 <p class="title">How a disk uses its image</p>
 <dl>
@@ -59,23 +126,197 @@ the image, which writes them into it, and lists first what else uses it;
 changes away; <span class="gui">Show in Files</span> and <span
 class="gui">Remove Disk</span>. Saving and merging run in the
 background, with their progress, and can be stopped.</p>
+<div class="terms">
+<p class="title">Changes</p>
+<dl>
+<dt><span class="gui">Forget the changes</span></dt>
+<dd>
+<p>The machine writes the changes to its disks in temporary files,
+forgotten when it stops: each start begins from the same disks. Off by
+default.</p>
+</dd>
+<dt><span class="gui">Virtio disks</span></dt>
+<dd>
+Attach the disks as virtio devices, faster than those of a PC, for a
+system that has their driver, as Linux, which names them <code
+class="sys">vda</code>, <code class="sys">vdb</code> and so on. Off by
+default.
+</dd>
+</dl>
+</div>
+<h2 id="cdrom">CD-ROM and boot</h2>
+<dl>
+<dt><span class="gui">CD-ROM</span></dt>
+<dd>
+<p>What the CD-ROM holds: <span class="gui">Nothing</span>, the default;
+<span class="gui">An image</span>, a file as an <code
+class="file">.iso</code>; or <span class="gui">A drive</span> of this
+computer.</p>
+</dd>
+<dt><span class="gui">Image</span></dt>
+<dd>
+<p>With <span class="gui">An image</span>: the image file. Type it, or
+choose it with the button beside it.</p>
+</dd>
+<dt><span class="gui">Drive</span></dt>
+<dd>
+<p>With <span class="gui">A drive</span>: the CD-ROM drive of this
+computer, as <code class="file">/dev/cdrom</code>.</p>
+</dd>
+<dt><span class="gui">Boot from</span></dt>
+<dd>
+<p>The first place the machine boots from: <span class="gui">The
+default</span>, that of QEMU; <span class="gui">The first disk</span>;
+<span class="gui">The CD-ROM</span>; <span class="gui">The
+floppy</span>; or <span class="gui">The network</span>.</p>
+</dd>
+</dl>
 <h2 id="network">Network cards</h2>
-<p><span class="gui">Add Card</span> adds a network card after the
-others. The cards are in the order the machine sees them, the first one
-first. Each has a <span class="gui">Model</span>, a <span
-class="gui">MAC address</span>, and what it is <span class="gui">Plugged
-into</span>:</p>
+<p><span class="gui">Add Card</span> adds a card after the others. The
+cards are in the order the machine sees them, the first one first, <code
+class="sys">eth0</code> in the settings. The button at the end of a card
+removes it. Each card has:</p>
+<dl>
+<dt><span class="gui">Model</span></dt>
+<dd>
+<p>The network card that QEMU emulates, of those that this QEMU has;
+<code class="sys">rtl8139</code> by default, or another one where QEMU
+lacks it.</p>
+</dd>
+<dt><span class="gui">MAC address</span></dt>
+<dd>
+<p>The address of the card on the network. A new card has a random one;
+the button beside it makes another.</p>
+</dd>
+<dt><span class="gui">Plugged into</span></dt>
+<dd>
+<p>What the card joins:</p>
 <ul>
-<li><p>a switch of the lab;</p></li>
+<li><p>a switch of the lab, by its name;</p></li>
 <li><p><span class="gui">The host only, on QEMU's user network</span>:
 QEMU joins the machine to this computer, and through it to the networks
 this computer reaches, with no switch;</p></li>
 <li><p><span class="gui">Other bricks plug into it</span>: the card is a
 socket, and a wire can plug into it when the setting <span
-class="gui">Plugs into machines</span> of the project allows
-it;</p></li>
-<li><p><span class="gui">Nothing</span>.</p></li>
+class="gui">Plugs into machines</span> of the project allows it, see <a
+href="settings.html#project">The project</a>;</p></li>
+<li><p><span class="gui">Nothing</span>: the card goes nowhere, and the
+machine can't start until you plug it in or remove it.</p></li>
 </ul>
+</dd>
+</dl>
+<h2 id="display">Display</h2>
+<dl>
+<dt><span class="gui">No display</span></dt>
+<dd>
+<p>The machine has no screen at all: only its console, and its serial
+port. <span class="gui">VNC</span> and <span class="gui">SDL
+window</span> are then greyed. Off by default.</p>
+</dd>
+<dt><span class="gui">Standard VGA</span></dt>
+<dd>
+<p>A standard VGA card in place of the one of the machine. Off by
+default.</p>
+</dd>
+<dt><span class="gui">VNC</span>, <span class="gui">VNC
+display</span></dt>
+<dd>
+<p>Show the screen of the machine over VNC, on the display of that
+number, from 0 to 500; 1 by default. A VNC viewer connects to port 5900
+and the number, as <code class="cmd">vncviewer localhost:1</code>. Off
+by default.</p>
+</dd>
+<dt><span class="gui">SDL window</span></dt>
+<dd>
+<p>Show the screen in a window of SDL. Off by default.</p>
+</dd>
+<dt><span class="gui">Keyboard layout</span></dt>
+<dd>
+<p>The layout of the keyboard of the machine, two letters, as
+<code>it</code> or <code>de</code>; empty for that of QEMU.</p>
+</dd>
+</dl>
+<h2 id="sound">Sound and USB</h2>
+<dl>
+<dt><span class="gui">Sound card</span></dt>
+<dd>
+<p><span class="gui">None</span>, the default; <span class="gui">PC
+speaker</span>; or one of the sound cards of this QEMU.</p>
+</dd>
+<dt><span class="gui">Audio driver</span></dt>
+<dd>
+<p>Where the sound goes on this computer, as the <span
+class="gui">Settings</span> window says: see <a
+href="settings.html#computer">This computer</a>.</p>
+</dd>
+<dt><span class="gui">USB</span></dt>
+<dd>
+<p>Give the machine USB, and the devices below. Off by default.</p>
+</dd>
+<dt><span class="gui">USB devices</span></dt>
+<dd>
+<p>The USB devices of this computer, each with a switch that gives it to
+the machine. A device that the machine has and this computer hasn't
+shows as not on this host. QEMU runs as you: it needs the right to open
+the device.</p>
+</dd>
+</dl>
+<h2 id="kernel">Kernel</h2>
+<dl>
+<dt><span class="gui">Boot a kernel</span></dt>
+<dd>
+<p>Boot a kernel of your own, not the one on the disks. Off by
+default.</p>
+</dd>
+<dt><span class="gui">Kernel</span></dt>
+<dd>
+<p>With <span class="gui">Boot a kernel</span>: the file of the
+kernel.</p>
+</dd>
+<dt><span class="gui">Initial ramdisk</span>, <span
+class="gui">Ramdisk</span></dt>
+<dd>
+<p>With <span class="gui">Boot a kernel</span>: load an initial ramdisk
+with the kernel, and its file.</p>
+</dd>
+<dt><span class="gui">Command line</span></dt>
+<dd>
+<p>The command line of the kernel, as
+<code>console=ttyS0 root=/dev/vda1</code>.</p>
+</dd>
+<dt><span class="gui">GDB</span>, <span class="gui">GDB port</span></dt>
+<dd>
+<p>Let GDB debug the machine, on that TCP port, from 1 to 65535; 1234 by
+default. In GDB, <code class="cmd">target remote localhost:1234</code>.
+Off by default.</p>
+</dd>
+</dl>
+<h2 id="advanced">Advanced</h2>
+<dl>
+<dt><span class="gui">Local time</span></dt>
+<dd>
+<p>Start the clock of the machine at the local time, not UTC, as Windows
+expects. Off by default.</p>
+</dd>
+<dt><span class="gui">Drift fix</span></dt>
+<dd>
+<p>Correct the drift of the clock of the machine, which a busy computer
+slows down. Off by default.</p>
+</dd>
+<dt><span class="gui">Serial socket</span></dt>
+<dd>
+<p>Connect the serial port of the machine to a socket, <code
+class="file">vm1_serial</code> for <code class="sys">vm1</code>, in the
+folder of the sockets of the project, see <a
+href="config-files.html">virtualbricks-config(5)</a>; a program such as
+<code class="cmd">socat</code> connects to it. Off by default.</p>
+</dd>
+<dt><span class="gui">Icon</span></dt>
+<dd>
+<p>A picture to show in place of the icon of a virtual machine, in the
+list and in the <span class="gui">Topology</span> tab.</p>
+</dd>
+</dl>
 <h2 id="console">The console of a machine</h2>
 <p>While the machine runs, <span class="guiseq"><span
 class="gui">Process</span> › <span class="gui">Open Control

@@ -152,6 +152,7 @@ class Transitions(Gtk.Grid):
 class NetemuPanel(Panel):
     """The settings of a Netemu."""
 
+    help_page = "netemu"
     draft: NetemuDraft
 
     def build(self, form: Form) -> None:

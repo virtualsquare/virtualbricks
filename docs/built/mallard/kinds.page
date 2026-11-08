@@ -25,11 +25,11 @@
       </item>
       <item>
         <title><gui>Switch</gui></title>
-        <p>A VDE switch: the other bricks plug into its ports, as into an Ethernet switch. It can start as it is. It runs <cmd>vde_switch</cmd>.</p>
+        <p>A VDE switch: the other bricks plug into its ports, as into an Ethernet switch. It can start as it is. It runs <cmd>vde_switch</cmd>. See <link xref="switches"/>.</p>
       </item>
       <item>
         <title><gui>Switch wrapper</gui></title>
-        <p>A switch that another program runs. The bricks of this project plug into its socket, whose path its settings give. You don't start or stop it: it runs while that socket is there.</p>
+        <p>A switch that another program runs. The bricks of this project plug into its socket, whose path its settings give. You don't start or stop it: it runs while that socket is there. See <link xref="switch-wrappers"/>.</p>
       </item>
       <item>
         <title><gui>Router</gui></title>
@@ -42,19 +42,19 @@
     <terms>
       <item>
         <title><gui>Wire</gui></title>
-        <p>A cable between two switches, which its settings choose. It runs <cmd>dpipe</cmd> and <cmd>vde_plug</cmd>.</p>
+        <p>A cable between two switches, which its settings choose. It runs <cmd>dpipe</cmd> and <cmd>vde_plug</cmd>. See <link xref="wires"/>.</p>
       </item>
       <item>
         <title><gui>Netemu</gui></title>
-        <p>A cable between two switches that emulates a network link: its bandwidth, delay, loss and more, in states that change over time. It runs <cmd>vde-netemu</cmd>.</p>
+        <p>A cable between two switches that emulates a network link: its bandwidth, delay, loss and more, in states that change over time. It runs <cmd>vde-netemu</cmd>. See <link xref="netemu"/>.</p>
       </item>
       <item>
         <title><gui>Tunnel server</gui></title>
-        <p>One end of an encrypted tunnel: it joins a switch here to a tunnel client on another computer, which connects to it. It runs <cmd>vde_cryptcab</cmd>.</p>
+        <p>One end of an encrypted tunnel: it joins a switch here to a tunnel client on another computer, which connects to it. It runs <cmd>vde_cryptcab</cmd>. See <link xref="tunnel-servers"/>.</p>
       </item>
       <item>
         <title><gui>Tunnel client</gui></title>
-        <p>The other end of an encrypted tunnel: it joins a switch here to a tunnel server on another computer, whose address its settings give. It runs <cmd>vde_cryptcab</cmd>.</p>
+        <p>The other end of an encrypted tunnel: it joins a switch here to a tunnel server on another computer, whose address its settings give. It runs <cmd>vde_cryptcab</cmd>. See <link xref="tunnel-clients"/>.</p>
       </item>
     </terms>
   </section>
@@ -63,11 +63,11 @@
     <terms>
       <item>
         <title><gui>Tap</gui></title>
-        <p>A network interface of this computer, plugged into a switch: this computer joins the lab through it. It runs <cmd>vde_plug2tap</cmd> as root, through <cmd>sudo</cmd>.</p>
+        <p>A network interface of this computer, plugged into a switch: this computer joins the lab through it. It runs <cmd>vde_plug2tap</cmd> as root, through <cmd>sudo</cmd>. See <link xref="taps"/>.</p>
       </item>
       <item>
         <title><gui>Capture interface</gui></title>
-        <p>An interface of this computer, whose packets go to a switch. It runs <cmd>vde_pcapplug</cmd> as root, through <cmd>sudo</cmd>.</p>
+        <p>An interface of this computer, whose packets go to a switch. It runs <cmd>vde_pcapplug</cmd> as root, through <cmd>sudo</cmd>. See <link xref="capture-interfaces"/>.</p>
       </item>
     </terms>
     <p>For what <cmd>sudo</cmd> needs, see <link xref="problems#sudo"/>.</p>

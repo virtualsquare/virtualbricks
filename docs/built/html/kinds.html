@@ -39,13 +39,15 @@ machines</a>.</p>
 <dd>
 <p>A VDE switch: the other bricks plug into its ports, as into an
 Ethernet switch. It can start as it is. It runs <code
-class="cmd">vde_switch</code>.</p>
+class="cmd">vde_switch</code>. See <a
+href="switches.html">Switches</a>.</p>
 </dd>
 <dt><span class="gui">Switch wrapper</span></dt>
 <dd>
 <p>A switch that another program runs. The bricks of this project plug
 into its socket, whose path its settings give. You don't start or stop
-it: it runs while that socket is there.</p>
+it: it runs while that socket is there. See <a
+href="switch-wrappers.html">Switch wrappers</a>.</p>
 </dd>
 <dt><span class="gui">Router</span></dt>
 <dd>
@@ -58,26 +60,29 @@ configures it. It runs <code class="cmd">vde_router</code>.</p>
 <dt><span class="gui">Wire</span></dt>
 <dd>
 <p>A cable between two switches, which its settings choose. It runs
-<code class="cmd">dpipe</code> and <code
-class="cmd">vde_plug</code>.</p>
+<code class="cmd">dpipe</code> and <code class="cmd">vde_plug</code>.
+See <a href="wires.html">Wires</a>.</p>
 </dd>
 <dt><span class="gui">Netemu</span></dt>
 <dd>
 <p>A cable between two switches that emulates a network link: its
 bandwidth, delay, loss and more, in states that change over time. It
-runs <code class="cmd">vde-netemu</code>.</p>
+runs <code class="cmd">vde-netemu</code>. See <a
+href="netemu.html">Netemu</a>.</p>
 </dd>
 <dt><span class="gui">Tunnel server</span></dt>
 <dd>
 <p>One end of an encrypted tunnel: it joins a switch here to a tunnel
 client on another computer, which connects to it. It runs <code
-class="cmd">vde_cryptcab</code>.</p>
+class="cmd">vde_cryptcab</code>. See <a
+href="tunnel-servers.html">Tunnel servers</a>.</p>
 </dd>
 <dt><span class="gui">Tunnel client</span></dt>
 <dd>
 <p>The other end of an encrypted tunnel: it joins a switch here to a
 tunnel server on another computer, whose address its settings give. It
-runs <code class="cmd">vde_cryptcab</code>.</p>
+runs <code class="cmd">vde_cryptcab</code>. See <a
+href="tunnel-clients.html">Tunnel clients</a>.</p>
 </dd>
 </dl>
 <h2 id="host">This computer</h2>
@@ -87,13 +92,14 @@ runs <code class="cmd">vde_cryptcab</code>.</p>
 <p>A network interface of this computer, plugged into a switch: this
 computer joins the lab through it. It runs <code
 class="cmd">vde_plug2tap</code> as root, through <code
-class="cmd">sudo</code>.</p>
+class="cmd">sudo</code>. See <a href="taps.html">Taps</a>.</p>
 </dd>
 <dt><span class="gui">Capture interface</span></dt>
 <dd>
 <p>An interface of this computer, whose packets go to a switch. It runs
 <code class="cmd">vde_pcapplug</code> as root, through <code
-class="cmd">sudo</code>.</p>
+class="cmd">sudo</code>. See <a href="capture-interfaces.html">Capture
+interfaces</a>.</p>
 </dd>
 </dl>
 <p>For what <code class="cmd">sudo</code> needs, see <a
@@ -110,9 +116,42 @@ lab.</p>
 </div>
 </div>
 <div class="link">
+<p><a href="capture-interfaces.html">Capture interfaces</a></p>
+<div class="desc">
+<p>The switch and the interface of this computer that a capture
+interface joins.</p>
+</div>
+</div>
+<div class="link">
 <p><a href="first-lab.html">Make your first lab</a></p>
 <div class="desc">
 <p>A switch and a machine plugged into it, started.</p>
+</div>
+</div>
+<div class="link">
+<p><a href="netemu.html">Netemu</a></p>
+<div class="desc">
+<p>The bandwidth, delay, buffer and loss of an emulated link, in states
+that change by chance.</p>
+</div>
+</div>
+<div class="link">
+<p><a href="switch-wrappers.html">Switch wrappers</a></p>
+<div class="desc">
+<p>The control folder of a switch that another program runs.</p>
+</div>
+</div>
+<div class="link">
+<p><a href="switches.html">Switches</a></p>
+<div class="desc">
+<p>Its ports, hub mode and fast spanning tree.</p>
+</div>
+</div>
+<div class="link">
+<p><a href="taps.html">Taps</a></p>
+<div class="desc">
+<p>The switch that a network interface of this computer joins, and its
+address.</p>
 </div>
 </div>
 <div class="link">
@@ -120,6 +159,26 @@ lab.</p>
 <div class="desc">
 <p>VDE and QEMU: what a missing program stops, and where Virtualbricks
 looks for them.</p>
+</div>
+</div>
+<div class="link">
+<p><a href="tunnel-clients.html">Tunnel clients</a></p>
+<div class="desc">
+<p>The switch, server, ports and password of the end of a tunnel that
+connects to the other.</p>
+</div>
+</div>
+<div class="link">
+<p><a href="tunnel-servers.html">Tunnel servers</a></p>
+<div class="desc">
+<p>The switch, port and password of the end of a tunnel that waits for
+the other.</p>
+</div>
+</div>
+<div class="link">
+<p><a href="wires.html">Wires</a></p>
+<div class="desc">
+<p>The two switches a wire joins.</p>
 </div>
 </div>
 </div>

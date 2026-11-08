@@ -66,6 +66,8 @@ brick show in place of the list, under a line that names it. **OK** applies
 them, and is greyed while a setting is wrong, with the first problem beside it.
 **Cancel** and [Esc]{.key} go back to the list without a change. While the
 brick runs, a bar over its settings says which of them change at once.
+[F1]{.key} and **Help** open the page about the settings of its kind, as
+[](switches) or [](machines); [](index#kinds) lists them.
 
 ![The settings of a
 switch](figures/switch-settings.png){alt="The settings of sw1 in place of the list, under a line that names it: Ports, 32, and Hub mode and Fast spanning tree, off; Help, Cancel and OK at the bottom."}
